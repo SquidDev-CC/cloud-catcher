@@ -30,7 +30,13 @@ Subcommands:
       end
 
       local resolved = shell.resolve(file)
-      if not fs.exists(resolved) then error(("%q does not exist"):format(file), 0)
+      if not fs.exists(resolved) then 
+        -- silently make the file
+        local f = fs.open(resolved, "w")
+        if type(f) == "table" and type(f.close) == "function" then
+          f.close() 
+        else
+          error(("Failed to make empty file %q for opening"):format(file), 0)
       elseif fs.isDir(resolved) then error(("%q is a directory"):format(file), 0)
       end
 
