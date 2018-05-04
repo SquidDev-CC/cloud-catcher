@@ -1,0 +1,5 @@
+/dist
+/build
+/node_modules
+/public/assets/main.js
+/public/cloud.lua
