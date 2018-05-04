@@ -62,11 +62,13 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         + (x.readOnly ? " file-icon-readonly" : "");
       const iconLabels = "Close editor" + (x.readOnly ? " (read only)" : "");
 
-      const sepIndex = x.name.lastIndexOf("/");
+      let name = x.name;
+      if (name.charAt(0) !== "/") name = "/" + name;
+      const sepIndex = name.lastIndexOf("/");
       return <div key={x.name} class={fileClasses} onClick={this.createSelectFile(x)}>
         <div class={iconClasses} title={iconLabels} onClick={this.createClose(x)}></div>
-        <div class="file-name">{x.name.substr(sepIndex + 1)}</div>
-        <div class="file-info">{x.name.substr(0, sepIndex + 1)}</div>
+        <div class="file-name">{name.substr(sepIndex + 1)}</div>
+        <div class="file-info">{name.substr(0, sepIndex + 1)}</div>
       </div>;
     });
 
