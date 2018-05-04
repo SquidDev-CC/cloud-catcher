@@ -2,7 +2,7 @@ import { Component, h } from "preact";
 import { encodeByte, encodeNibble, encodePacket, PacketCode } from "../../network";
 import { Semaphore } from "../event";
 import { TerminalData } from "../terminal/data";
-import { convertKey, convertMouseButton } from "../terminal/input";
+import { convertKey, convertMouseButton, convertMouseButtons } from "../terminal/input";
 import * as render from "../terminal/render";
 
 export type TerminalProps = {
@@ -223,25 +223,39 @@ export class Terminal extends Component<TerminalProps, {}> {
       Math.floor((event.pageY - this.canvasElem.offsetTop - render.margin)
         / (this.canvasElem.height - 2 * render.margin) * this.props.terminal.sizeY) + 1,
       1, this.props.terminal.sizeY);
-    const button = convertMouseButton(event.button);
 
-    if (button) {
-      if (event.type === "mousedown") {
-        this.props.connection.send(encodePacket(PacketCode.EventMouse) +
-          encodeNibble(0) + encodeNibble(button) +
-          encodeByte(x) + encodeByte(y));
-      } else if (event.type === "mouseup") {
-        this.props.connection.send(encodePacket(PacketCode.EventMouse) +
-          encodeNibble(1) + encodeNibble(button) +
-          encodeByte(x) + encodeByte(y));
-      } else if (event.type === "mousemove" && (x !== this.lastX || y !== this.lastY)) {
-        this.props.connection.send(encodePacket(PacketCode.EventMouse) +
-          encodeNibble(2) + encodeNibble(button) +
-          encodeByte(x) + encodeByte(y));
+    switch (event.type) {
+      case "mousedown": {
+        const button = convertMouseButton(event.button);
+        if (button) {
+          this.props.connection.send(encodePacket(PacketCode.EventMouse) +
+            encodeNibble(0) + encodeNibble(button) +
+            encodeByte(x) + encodeByte(y));
+          this.lastX = x;
+          this.lastY = y;
+        }
+        break;
       }
-
-      this.lastX = x;
-      this.lastY = y;
+      case "mouseup": {
+        const button = convertMouseButton(event.button);
+        if (button) {
+          this.props.connection.send(encodePacket(PacketCode.EventMouse) +
+            encodeNibble(1) + encodeNibble(button) +
+            encodeByte(x) + encodeByte(y));
+          this.lastX = x;
+          this.lastY = y;
+        }
+      }
+      case "mousemove": {
+        const button = convertMouseButtons(event.buttons);
+        if (button && (x !== this.lastX || y !== this.lastY)) {
+          this.props.connection.send(encodePacket(PacketCode.EventMouse) +
+            encodeNibble(2) + encodeNibble(button) +
+            encodeByte(x) + encodeByte(y));
+          this.lastX = x;
+          this.lastY = y;
+        }
+      }
     }
 
     if (this.inputElem) this.inputElem.focus();

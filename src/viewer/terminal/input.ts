@@ -2,9 +2,16 @@ export const convertMouseButton = (btn: number): number | undefined => {
   switch (btn) {
     case 0: return 1; // Left
     case 1: return 3; // Middle
-    case 2: return 3; // Right
+    case 2: return 2; // Right
     default: return undefined;
   }
+};
+
+export const convertMouseButtons = (btn: number): number | undefined => {
+  if ((btn & 1) !== 0) return 1; // Left
+  if ((btn & 2) !== 0) return 2; // Right
+  if ((btn & 4) !== 0) return 3; // Middle
+  return undefined;
 };
 
 enum BasicKeys {
