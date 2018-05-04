@@ -37,6 +37,7 @@ Subcommands:
           f.close() 
         else
           error(("Failed to make empty file %q for opening"):format(file), 0)
+        end
       elseif fs.isDir(resolved) then error(("%q is a directory"):format(file), 0)
       end
 
