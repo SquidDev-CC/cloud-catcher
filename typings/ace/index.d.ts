@@ -152,14 +152,14 @@ declare namespace Ace {
    * @param text {:textParam}
    * @param mode {:modeParam}
   **/
-  export function createEditSession(text: Document, mode: TextMode): IEditSession;
+  export function createEditSession(text: Document, mode?: TextMode): IEditSession;
 
   /**
    * Creates a new [[EditSession]], and returns the associated [[Document]].
    * @param text {:textParam}
    * @param mode {:modeParam}
   **/
-  export function createEditSession(text: string, mode: TextMode): IEditSession;
+  export function createEditSession(text: string, mode?: TextMode): IEditSession;
 
   ////////////////
   /// Anchor

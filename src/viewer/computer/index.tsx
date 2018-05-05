@@ -1,15 +1,15 @@
-import * as ace from "ace";
 import { Component, h } from "preact";
-import { FileOpenFlags, PacketCode, encodeByte, encodePacket, encodeU32 } from "../network";
-import { Token } from "../token";
-import { BufferingEventQueue, PacketEvent, Semaphore } from "./event";
-import { decode10TerminalChanged, decode30FileContents, decode31FileAccept, fletcher32 } from "./packet";
-import { Terminal } from "./terminal/component";
-import { TerminalData } from "./terminal/data";
+import { FileOpenFlags, PacketCode, encodeByte, encodePacket, encodeU32 } from "../../network";
+import { Token } from "../../token";
+import { BufferingEventQueue, PacketEvent, Semaphore } from "../event";
+import { decode10TerminalChanged, decode30FileContents, decode31FileAccept, fletcher32 } from "../packet";
+import { Terminal } from "../terminal/component";
+import { TerminalData } from "../terminal/data";
+import Editor, * as editor from "./editor";
 
 type FileInfo = {
   name: string,
-  model: ace.IEditSession,
+  model: editor.Model,
 
   remoteChecksum: number,
   updateChecksum?: number,
@@ -86,7 +86,8 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       </div>
       {activeFile == null
         ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} />
-        : <Editor file={activeFile} onChanged={this.onChanged} onSave={this.onSave} />}
+        : <Editor model={activeFile.model} readOnly={activeFile.readOnly}
+          onChanged={this.onChanged} onSave={this.onSave} />}
     </div>;
   }
 
@@ -156,8 +157,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       let fileList = this.state.files;
       let fileInfo = fileList.find(x => x.name === name);
       if (!fileInfo) {
-        const model = ace.createEditSession(contents, undefined!);
-        model.setMode("ace/mode/lua");
+        const model = editor.createModel(contents, "ace/mode/lua");
 
         fileInfo = {
           name, model,
@@ -195,59 +195,5 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         }
       }
     }
-  }
-}
-
-type FileEditorProps = {
-  file: FileInfo,
-  onChanged: (dirty: boolean) => void,
-  onSave: (contents: string) => void,
-};
-
-class Editor extends Component<FileEditorProps, {}> {
-  private editor?: ace.Editor;
-
-  public componentDidMount() {
-    this.editor = ace.edit(this.base);
-
-    this.editor.on("input", () => {
-      this.props.onChanged(!this.props.file.model.getUndoManager().isClean());
-    });
-    this.editor.commands.addCommand({
-      name: "save",
-      exec: (e: ace.Editor) => this.props.onSave(e.session.getValue()),
-      bindKey: { win: "ctrl-s", mac: "cmd-s" },
-    });
-
-    // Soon
-    // this.editor.setKeyboardHandler("ace/keyboard/vim");
-
-    this.editor.setSession(this.props.file.model);
-    this.editor.setReadOnly(this.props.file.readOnly);
-    this.editor.focus();
-  }
-
-  public componentWillUnmount() {
-    if (this.editor) {
-      // We set a new session to prevent destroying it when losing the editor
-      this.editor.setSession(new ace.EditSession(""));
-      this.editor.destroy();
-    }
-  }
-
-  public componentWillUpdate(newProps: FileEditorProps) {
-    return this.props.file !== newProps.file;
-  }
-
-  public componentDidUpdate() {
-    if (this.editor) {
-      this.editor.setSession(this.props.file.model);
-      this.editor.setReadOnly(this.props.file.readOnly);
-      this.editor.focus();
-    }
-  }
-
-  public render() {
-    return <div class="editor-view"></div>;
   }
 }
