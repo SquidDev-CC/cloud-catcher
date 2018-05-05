@@ -1,10 +1,11 @@
+import * as fs from "fs";
 import * as http from "http";
 import * as process from "process";
 import * as url from "url";
 import * as WebSocket from "ws";
 import { HTTPCodes, WebsocketCodes } from "../codes";
-import { encodePacket, fromHost, fromViewer, MAX_PACKET_SIZE, PacketCode } from "../network";
-import { checkToken, Token } from "../token";
+import { MAX_PACKET_SIZE, PacketCode, encodePacket, fromHost, fromViewer } from "../network";
+import { Token, checkToken } from "../token";
 import { handle } from "./static";
 
 type SessionWebSocket = WebSocket & {
@@ -23,9 +24,10 @@ const server = http.createServer();
 const connections = new Map<Token, Connection>();
 
 if (process.env.NODE_ENV === "production") {
+  const contents404 = fs.readFileSync("public/404.html", { encoding: "utf-8" });
   server.on("request", (_request: http.ServerRequest, response: http.ServerResponse) => {
     response.writeHead(404, { "Content-Type": "text/html" });
-    response.end("404 - Page not found", "utf-8");
+    response.end(contents404, "utf-8");
     return;
   });
 } else {
