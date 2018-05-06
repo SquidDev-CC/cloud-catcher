@@ -198,7 +198,9 @@ export const encoder = (width: number) => {
 export const encodePacket = encoder(2);
 export const encodeNibble = encoder(1);
 export const encodeByte = encoder(2);
-export const encodeU32 = (value: number) => ("00000000" + (value | 0).toString(16)).slice(-8);
+export const encodeU32 = (value: number) =>
+  // We use >>> as that operates on unsigned integers instead of signed ones
+  ("00000000" + (value >>> 0).toString(16)).slice(-8);
 
 /**
  * The maximum size a packet can be. Yes, this is silly, but let's put

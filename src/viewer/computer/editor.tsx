@@ -57,6 +57,6 @@ export default class Editor extends Component<EditorProps, {}> {
   }
 
   public render() {
-    return <div class="editor-component"></div>;
+    return <div class="editor-view"></div>;
   }
 }

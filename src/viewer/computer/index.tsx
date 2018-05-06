@@ -26,7 +26,7 @@ export type ComputerProps = {
 };
 
 type ComputerState = {
-  activeFile: FileInfo | null,
+  activeFile: string | null,
   files: FileInfo[],
   terminal: TerminalData,
   terminalChanged: Semaphore,
@@ -56,7 +56,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
 
   public render({ connection, token }: ComputerProps, { activeFile, files, terminal, terminalChanged }: ComputerState) {
     const fileList = files.map(x => {
-      const fileClasses = "file-entry" + (x === activeFile ? " active" : "");
+      const fileClasses = "file-entry" + (x.name === activeFile ? " active" : "");
       const iconClasses = "file-icon"
         + (x.modified ? " file-icon-modified" : "")
         + (x.readOnly ? " file-icon-readonly" : "");
@@ -65,8 +65,8 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       let name = x.name;
       if (name.charAt(0) !== "/") name = "/" + name;
       const sepIndex = name.lastIndexOf("/");
-      return <div key={x.name} class={fileClasses} onClick={this.createSelectFile(x)}>
-        <div class={iconClasses} title={iconLabels} onClick={this.createClose(x)}></div>
+      return <div key={x.name} class={fileClasses} onClick={this.createSelectFile(x.name)}>
+        <div class={iconClasses} title={iconLabels} onClick={this.createClose(x.name)}></div>
         <div class="file-name">{name.substr(sepIndex + 1)}</div>
         <div class="file-info">{name.substr(0, sepIndex + 1)}</div>
       </div>;
@@ -74,6 +74,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
 
     const computerClasses = "file-entry file-computer" + (activeFile === null ? " active" : "");
     const target = `${window.location.origin}/?id=${this.props.token}`;
+    const activeInfo = activeFile === null ? null : files.find(x => x.name === activeFile);
     return <div class="computer-view">
       <div class="file-list">
         <div class={computerClasses} onClick={this.createSelectFile(null)}>
@@ -84,27 +85,55 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         </div>
         {fileList}
       </div>
-      {activeFile == null
+      {activeInfo == null || activeFile == null
         ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} />
-        : <Editor model={activeFile.model} readOnly={activeFile.readOnly}
-          onChanged={this.onChanged} onSave={this.onSave} />}
+        : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly}
+          onChanged={this.createChanged(activeFile)} onSave={this.createSave(activeFile)} />}
     </div>;
   }
 
-  private createSelectFile(file: FileInfo | null) {
+  private createSelectFile(fileName: string | null) {
     return (e: Event) => {
       e.stopPropagation();
-      this.setState({ activeFile: file });
+      if (fileName === null || this.state.files.find(x => x.name === fileName)) {
+        this.setState({ activeFile: fileName });
+      }
     };
   }
 
-  private createClose(file: FileInfo) {
+  private createClose(fileName: string) {
     return (e: Event) => {
       e.stopPropagation();
+
       this.setState({
-        files: this.state.files.filter(x => x !== file),
-        activeFile: this.state.activeFile === file ? null : this.state.activeFile,
+        files: this.state.files.filter(x => x.name !== fileName),
+        activeFile: this.state.activeFile === fileName ? null : this.state.activeFile,
       });
+    };
+  }
+
+  private createChanged(fileName: string) {
+    return (dirty: boolean) => {
+      const file = this.state.files.find(x => x.name === fileName);
+      if (!file || dirty === file.modified) return;
+      this.setFileState(file, { modified: dirty });
+    };
+  }
+
+  private createSave(fileName: string) {
+    return (contents: string) => {
+      const file = this.state.files.find(x => x.name === fileName);
+      if (!file || file.readOnly) return;
+
+      // So technically we should update the state, but I'm just mutating
+      // for now as it doesn't change how things are displayed. I'm sorry.
+      file.updateMark = file.model.getUndoManager().getRevision();
+      file.updateChecksum = fletcher32(contents);
+
+      this.props.connection.send(encodePacket(PacketCode.FileContents) +
+        encodeByte(0) + encodeU32(file.remoteChecksum) +
+        file.name + "\0" +
+        contents);
     };
   }
 
@@ -118,48 +147,25 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     }
   }
 
-  private onChanged = (dirty: boolean) => {
-    const fileInfo = this.state.activeFile;
-    if (fileInfo && dirty !== fileInfo.modified) {
-      fileInfo.modified = dirty;
-      // So technically we should do an immuable copy of it all,
-      // but at this point it really isn't worth it.
-      this.setState({});
-    }
-  }
-
-  private onSave = (contents: string) => {
-    const fileInfo = this.state.activeFile;
-    if (fileInfo && !fileInfo.readOnly) {
-      fileInfo.updateMark = fileInfo.model.getUndoManager().getRevision();
-      fileInfo.updateChecksum = fletcher32(contents);
-
-      this.props.connection.send(encodePacket(PacketCode.FileContents) +
-        encodeByte(0) + encodeU32(fileInfo.remoteChecksum) +
-        fileInfo.name + "\0" +
-        contents);
-    }
-  }
-
   private onPacket = (event: PacketEvent) => {
     if (event.code === PacketCode.TerminalContents) {
       decode10TerminalChanged(event.message, this.state.terminal);
       this.state.terminalChanged.signal();
     } else if (event.code === PacketCode.FileContents) {
-      const file = decode30FileContents(event.message);
-      if (!file) {
+      const packet = decode30FileContents(event.message);
+      if (!packet) {
         console.error("Could not decode file contents packet");
         return; // We could log an error, but this'll do.
       }
 
-      const { name, contents, flags } = file;
+      const { name, contents, flags } = packet;
 
-      let fileList = this.state.files;
-      let fileInfo = fileList.find(x => x.name === name);
-      if (!fileInfo) {
+      let files = this.state.files;
+      let file = files.find(x => x.name === name);
+      if (!file) {
         const model = editor.createModel(contents, "ace/mode/lua");
 
-        fileInfo = {
+        file = {
           name, model,
 
           remoteChecksum: fletcher32(contents),
@@ -167,33 +173,43 @@ export class Computer extends Component<ComputerProps, ComputerState> {
           modified: false,
           readOnly: (flags & FileOpenFlags.ReadOnly) !== 0,
         };
-        fileList = [...fileList, fileInfo].sort((a, b) => a.name.localeCompare(b.name));
+        files = [...files, file].sort((a, b) => a.name.localeCompare(b.name));
       } else {
         // TODO: Add support for updating
       }
 
       this.setState({
-        files: fileList,
-        activeFile: (flags & FileOpenFlags.Edit) ? fileInfo : this.state.activeFile,
+        files,
+        activeFile: (flags & FileOpenFlags.Edit) ? file.name : this.state.activeFile,
       });
     } else if (event.code === PacketCode.FileAccept) {
-      const file = decode31FileAccept(event.message);
-      if (!file) return;
+      const packet = decode31FileAccept(event.message);
+      if (!packet) {
+        console.error("Received malformed file accept packet");
+        return;
+      }
 
-      const { name, checksum } = file;
-      const fileInfo = this.state.files.find(x => x.name === name);
-      if (fileInfo) {
-        fileInfo.remoteChecksum = checksum;
-        if (fileInfo.updateChecksum === checksum) {
-          fileInfo.model.getUndoManager().bookmark(fileInfo.updateMark);
+      const { name, checksum } = packet;
+      const file = this.state.files.find(x => x.name === name);
+      if (file) {
+        file.remoteChecksum = checksum;
 
-          fileInfo.modified = !fileInfo.model.getUndoManager().isClean();
-          fileInfo.updateMark = undefined;
-          fileInfo.updateChecksum = undefined;
-
-          this.setState({});
+        if (file.updateChecksum === checksum) {
+          file.model.getUndoManager().bookmark(file.updateMark);
+          this.setFileState(file, {
+            modified: !file.model.getUndoManager().isClean(),
+            updateMark: undefined,
+            updateChecksum: undefined,
+          });
         }
       }
     }
+  }
+
+  private setFileState<K extends keyof FileInfo>(file: FileInfo, props: Pick<FileInfo, K>) {
+    console.trace({ name: file.name, updateChecksum: file.updateChecksum }, props);
+    this.setState({
+      files: this.state.files.map(x => x !== file ? x : Object.assign({}, x, props)),
+    });
   }
 }
