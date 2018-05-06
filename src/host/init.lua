@@ -215,9 +215,16 @@ while ok and coroutine.status(co) ~= "dead" do
       if flags then
         flags, checksum = tonumber(flags, 16), tonumber(checksum, 16)
         local ok = bit32.band(flags, 0x1) == 1
+        local expected_checksum = 0
         if not ok then
           local handle = fs.open(name, "rb")
-          if handle then ok = checksum == encode.fletcher_32(handle.readAll()); handle.close() end
+          if handle then
+            local contents = handle.readAll()
+            handle.close()
+            expected_checksum = encode.fletcher_32(contents)
+          end
+
+          ok = expected_checksum == 0 or checksum == expected_checksum
         end
 
         local handle = ok and fs.open(name, "wb")
@@ -226,7 +233,7 @@ while ok and coroutine.status(co) ~= "dead" do
           handle.close()
           remote.send(("31%08x%s"):format(encode.fletcher_32(contents), name))
         else
-          remote.send(("32%08x%s"):format(encode.fletcher_32(contents), name))
+          remote.send(("32%08x%s"):format(expected_checksum, name))
         end
       end
     end
