@@ -6,6 +6,7 @@ import { decode10TerminalChanged, decode30FileContents, decode31FileAccept, flet
 import { Terminal } from "../terminal/component";
 import { TerminalData } from "../terminal/data";
 import Editor, * as editor from "./editor";
+import { Notification, NotificationBody, NotificationKind, Notifications } from "./notifications";
 
 type FileInfo = {
   name: string,
@@ -28,6 +29,8 @@ export type ComputerProps = {
 type ComputerState = {
   activeFile: string | null,
   files: FileInfo[],
+  notifications: Notification[],
+
   terminal: TerminalData,
   terminalChanged: Semaphore,
 };
@@ -39,6 +42,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     this.state = {
       activeFile: null,
       files: [],
+      notifications: [],
       terminal: new TerminalData(),
       terminalChanged: new Semaphore(),
     };
@@ -54,7 +58,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     this.props.events.detach(this.onPacket);
   }
 
-  public render({ connection, token }: ComputerProps, { activeFile, files, terminal, terminalChanged }: ComputerState) {
+  public render({ connection, token }: ComputerProps, { activeFile, files, notifications, terminal, terminalChanged }: ComputerState) {
     const fileList = files.map(x => {
       const fileClasses = "file-entry" + (x.name === activeFile ? " active" : "");
       const iconClasses = "file-icon"
@@ -76,19 +80,22 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     const target = `${window.location.origin}/?id=${this.props.token}`;
     const activeInfo = activeFile === null ? null : files.find(x => x.name === activeFile);
     return <div class="computer-view">
-      <div class="file-list">
-        <div class={computerClasses} onClick={this.createSelectFile(null)}>
-          <div class="file-name">Remote files</div>
-          <div class="file-info">
-            <a href={target} title="Get a shareable link of this session token" onClick={this.onClickToken}>{token}</a>
+      <Notifications notifications={notifications} onClose={this.onCloseNotification} />
+      <div class="computer-split">
+        <div class="file-list">
+          <div class={computerClasses} onClick={this.createSelectFile(null)}>
+            <div class="file-name">Remote files</div>
+            <div class="file-info">
+              <a href={target} title="Get a shareable link of this session token" onClick={this.onClickToken}>{token}</a>
+            </div>
           </div>
+          {fileList}
         </div>
-        {fileList}
+        {activeInfo == null || activeFile == null
+          ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} />
+          : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly}
+            onChanged={this.createChanged(activeFile)} onSave={this.createSave(activeFile)} />}
       </div>
-      {activeInfo == null || activeFile == null
-        ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} />
-        : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly}
-          onChanged={this.createChanged(activeFile)} onSave={this.createSave(activeFile)} />}
     </div>;
   }
 
@@ -106,6 +113,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       e.stopPropagation();
 
       this.setState({
+        notifications: this.state.notifications.filter(x => !x.id.startsWith(fileName + "\0")),
         files: this.state.files.filter(x => x.name !== fileName),
         activeFile: this.state.activeFile === fileName ? null : this.state.activeFile,
       });
@@ -145,6 +153,10 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     if (target !== window.location.href && window.history.replaceState) {
       window.history.replaceState({ id: this.props.token }, window.name, target);
     }
+  }
+
+  private onCloseNotification = (id: string) => {
+    this.setState({ notifications: this.state.notifications.filter(x => x.id !== id) });
   }
 
   private onPacket = (event: PacketEvent) => {
@@ -201,15 +213,68 @@ export class Computer extends Component<ComputerProps, ComputerState> {
             updateMark: undefined,
             updateChecksum: undefined,
           });
+
+          this.removeFileNotification(file, "update");
+        } else {
+          this.pushFileNotification(file, NotificationKind.Warn, "update",
+            <span>
+              <code>{file.name}</code> has been changed, you may want to close and reopen to update it.
+            </span>);
         }
+      }
+    } else if (event.code === PacketCode.FileReject) {
+      const packet = decode31FileAccept(event.message);
+      if (!packet) {
+        console.error("Received malformed file reject packet");
+        return;
+      }
+
+      const { name, checksum } = packet;
+      const file = this.state.files.find(x => x.name === name);
+      if (file && file.updateChecksum) {
+        this.pushFileNotification(file, NotificationKind.Error, "update",
+          <span>
+            <code>{file.name}</code> could not be saved as it was changed on the remote client.
+          </span>);
       }
     }
   }
 
+  /**
+   * Update the state for a given file
+   */
   private setFileState<K extends keyof FileInfo>(file: FileInfo, props: Pick<FileInfo, K>) {
-    console.trace({ name: file.name, updateChecksum: file.updateChecksum }, props);
     this.setState({
       files: this.state.files.map(x => x !== file ? x : Object.assign({}, x, props)),
+    });
+  }
+
+  /**
+   * Push a notification with for a file
+   */
+  private pushFileNotification(file: FileInfo, kind: NotificationKind, category: string, message: NotificationBody) {
+    const id = file.name + "\0" + category;
+
+    const notifications = this.state.notifications.filter(x => x.id !== id);
+    notifications.push({ id, kind, message });
+    this.setState({ notifications });
+  }
+
+  /**
+   * Push a notification with for a file, replacing any other notfifications for this file
+   */
+  private replaceFileNotification(file: FileInfo, kind: NotificationKind, category: string, message: NotificationBody) {
+    const id = file.name + "\0" + category;
+
+    const notifications = this.state.notifications.filter(x => !x.id.startsWith(file.name + "\0"));
+    notifications.push({ id, kind, message });
+    this.setState({ notifications });
+  }
+
+  private removeFileNotification(file: FileInfo, category: string) {
+    const id = file.name + "\0" + category;
+    this.setState({
+      notifications: this.state.notifications.filter(x => x.id !== id),
     });
   }
 }

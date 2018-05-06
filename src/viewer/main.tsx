@@ -69,10 +69,13 @@ export class Main extends Component<MainProps, MainState> {
 
         case PacketCode.TerminalContents:
         case PacketCode.FileContents:
+          events.enqueue(new PacketEvent(code, data.substr(2)));
+          this.setState({ currentVDom: this.state.computerVDom });
+          break;
+
         case PacketCode.FileAccept:
         case PacketCode.FileReject:
           events.enqueue(new PacketEvent(code, data.substr(2)));
-          this.setState({ currentVDom: this.state.computerVDom });
           break;
 
         default:

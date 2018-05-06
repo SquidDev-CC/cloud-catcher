@@ -53,6 +53,10 @@ pre { padding: 10px; }
 
 .computer-view {
   height: 100%;
+}
+
+.computer-split {
+  height: 100%;
   display: flex;
   flex-wrap: nowrap;
   justify-content: space-between;
@@ -107,3 +111,56 @@ pre { padding: 10px; }
 .file-entry:hover .file-icon:before  { content: "\2715"; }
 .file-icon.file-icon-modified:before { content: "\2b24"; }
 .file-icon.file-icon-readonly:before { content: "!"; }
+
+.notifications {
+  position: absolute;
+  left: 200px; /* From .file-list, I'm sorry */
+  top: 0;
+  right:  0;
+}
+
+.notification {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+
+  width: 80%;
+  margin: 10px auto;
+  z-index: 100;
+  font-size: 0.9em;
+
+  background: #fafafa;
+}
+
+.notification > * { padding: 0.5em; }
+.notification-kind { color: white; }
+
+.notification-content {
+  flex-grow: 1;
+  flex-shrink: 1;
+}
+
+.notification-close {
+  color: #aaa;
+  cursor: pointer;
+}
+
+.notification-close, .notification-kind {
+  display: flex;
+  align-items: center;
+}
+
+.notification-close:hover { color: #666; }
+.notification-close:before { content: "\2715"; }
+
+.notification-error { border: 1px solid #ff0000; }
+.notification-error .notification-kind { background-color: #ff0000; }
+.notification-error .notification-kind span:before { content: "Error"; }
+
+.notification-warn { border: 1px solid #f9982f; }
+.notification-warn .notification-kind { background-color: #f9982f; }
+.notification-warn .notification-kind span:before { content: "Warning"; }
+
+.notification-ok { border: 1px solid #2dff31; }
+.notification-ok .notification-kind { background-color: #2dff31; }
+.notification-ok .notification-kind span:before { content: "Success"; }

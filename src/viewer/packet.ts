@@ -35,65 +35,6 @@ export const decode10TerminalChanged = (packet: string, terminal: TerminalData) 
   }
 };
 
-/**
- * LZW compression implementation
- */
-const compress = (uncompressed: string) => {
-  const dictionary: Map<string, number> = new Map();
-  let dictSize = 255;
-  for (let i = 0; i < 256; i++) dictionary.set(String.fromCharCode(i), i);
-
-  const result: string[] = [];
-  let ws = 0;
-  for (let i = 0; i < uncompressed.length; i++) {
-    const w = uncompressed.substring(ws, i + 1);
-    if (!dictionary.has(w)) {
-      result.push(String.fromCharCode(dictionary.get(uncompressed.substring(ws, i))!));
-      // Add wc to the dictionary.
-      dictionary.set(w, dictSize++);
-      ws = i;
-    }
-  }
-
-  // Output the code for w.
-  if (ws < uncompressed.length) {
-    result.push(String.fromCharCode(dictionary.get(uncompressed.substring(ws, uncompressed.length))!));
-  }
-
-  return result.join("");
-};
-
-/**
- * LZW decompression implementation
- */
-const decompress = (compressed: string) => {
-  const dictionary: string[] = [];
-  let dictSize = 255;
-  for (let i = 0; i < 256; i++) dictionary[i] = String.fromCharCode(i);
-
-  const result = [];
-  let w = "";
-  for (let i = 0; i < compressed.length; i++) {
-    const k = compressed.charCodeAt(i);
-    let entry;
-    if (dictionary[k] !== undefined) {
-      entry = dictionary[k];
-    } else if (k === dictSize) {
-      entry = w + w.charAt(0);
-    } else {
-      return null;
-    }
-
-    result.push(entry);
-    dictionary[++dictSize] = w + entry.charAt(0);
-    w = entry;
-  }
-  return result.join("");
-};
-
-const toBase64 = window.btoa;
-const fromBase64 = window.atob;
-
 export const fletcher32 = (contents: string) => {
   let s1 = 0;
   let s2 = 0;
@@ -106,7 +47,7 @@ export const fletcher32 = (contents: string) => {
     s1 = (s1 + c1 + (c2 << 8)) % 0xFFFF;
     s2 = (s1 + s2) % 0xFFFF;
   }
-  return s2 << 16 | s1;
+  return (s2 << 16 | s1) >>> 0;
 };
 
 export const decode30FileContents = (packet: string): {
