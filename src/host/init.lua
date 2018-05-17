@@ -30,12 +30,26 @@ Subcommands:
       end
 
       local resolved = shell.resolve(file)
-      if not fs.exists(resolved) then error(("%q does not exist"):format(file), 0)
-      elseif fs.isDir(resolved) then error(("%q is a directory"):format(file), 0)
+
+      -- Create .lua files by default
+      if not fs.exists(resolved) and not resolved:find("%.") then
+        local extension = settings.get("edit.default_extension", "")
+        if extension ~= "" and type(extension) == "string" then
+            resolved = resolved .. "." .. extension
+        end
       end
 
-      if fs.isReadOnly(resolved) then print(("%q is read only, will not be able to modify"):format(file)) end
+      -- Error checking: we can't edit directories or readonly files which don't exist
+      if fs.isDir(resolved) then error(("%q is a directory"):format(file), 0) end
+      if fs.isReadOnly(resolved) then
+        if fs.exists(resolved) then
+          print(("%q is read only, will not be able to modify"):format(file))
+        else
+          error(("%q does not exist"):format(file), 0)
+        end
+      end
 
+      -- Let's actually edit the thing!
       local ok, err = cloud.edit(resolved)
       if not ok then error(err, 0) end
       return
@@ -91,11 +105,15 @@ do
   _G.cloud_catcher = {
     token = function() return token end,
     edit = function(file, force)
-      local handle, err = fs.open(file, "rb")
-      if not handle then return false, ("Cannot open file (%s)"):format(err) end
-
-      local contents = handle.readAll()
-      handle.close()
+      -- We default to editing an empty string if the file doesn't exist
+      local contents
+      local handle = fs.open(file, "rb")
+      if handle then
+        contents = handle.readAll()
+        handle.close()
+      else
+        contents = ""
+      end
 
       -- We currently don't compress because I'm a wuss.
       local encoded = contents
@@ -211,22 +229,29 @@ while ok and coroutine.status(co) ~= "dead" do
         end
       end
     elseif code == 0x30 then
+      -- File edit events
       local flags, checksum, name, contents = message:match("^..(%x%x)(%x%x%x%x%x%x%x%x)([^\0]+)\0(.*)$")
       if flags then
         flags, checksum = tonumber(flags, 16), tonumber(checksum, 16)
-        local ok = bit32.band(flags, 0x1) == 1
-        local expected_checksum = 0
-        if not ok then
-          local handle = fs.open(name, "rb")
-          if handle then
-            local contents = handle.readAll()
-            handle.close()
-            expected_checksum = encode.fletcher_32(contents)
-          end
 
+        -- If the force flag is true, then we can always edit
+        local ok = bit32.band(flags, 0x1) == 1
+
+        -- Try to open the file. If it exists, determine the expected checksum
+        local expected_checksum = 0
+        local handle = fs.open(name, "rb")
+        if handle then
+          local contents = handle.readAll()
+          handle.close()
+          expected_checksum = encode.fletcher_32(contents)
+        end
+
+        -- We can edit the file if it doesn't already exist, or if the checksums match.
+        if not ok then
           ok = expected_checksum == 0 or checksum == expected_checksum
         end
 
+        -- Try to write our changes if we're all OK, otherwise abort.
         local handle = ok and fs.open(name, "wb")
         if handle then
           handle.write(contents)
