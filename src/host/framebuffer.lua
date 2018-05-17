@@ -5,9 +5,28 @@ for i = 0, 16 do
   colour_lookup[string.format("%x", i)] = 2 ^ i
 end
 
-local function create(original)
-  if not original then original = term.current() end
+local void = function() end
 
+--- Create an empty terminal object which will discard output
+local function empty(colour, width, height)
+  local function is_colour() return colour end
+  return {
+    -- A load of voiding setters
+    write = void, blit = void, clear = void, clearLine = void,
+    setCursorPos = void, setCursorBlink = pos,
+    setPaletteColour = void, setPaletteColor = void,
+    setTextColour = void, setTextColor = void, setBackgroundColour = void, setBackgroundColor = void,
+    getTextColour = void, getTextColor = void, getBackgroundColour = void, getBackgroundColor = void,
+
+    -- The few getters we actually use
+    isColour = is_colour, isColor = is_colour,
+    getSize = function() return width, height end,
+    getPaletteColour = term.native().getPaletteColour, getPaletteColor = term.native().getPaletteColor,
+  }
+end
+
+--- Create a buffer which can be converted to a string and transmitted.
+local function buffer(original)
   local text = {}
   local text_colour = {}
   local back_colour = {}
@@ -38,65 +57,18 @@ local function create(original)
     original.write(writeText)
     dirty = true
 
-    local pos = cursor_x
-
     -- If we're off the screen then just emulate a write
-    if cursor_y > sizeY or cursor_y < 1 then
-      cursor_x = pos + #writeText
+    if cursor_y > sizeY or cursor_y < 1 or cursor_x + #writeText <= 1 or cursor_x > sizeX then
+      cursor_x = cursor_x + #writeText
       return
     end
 
-    if pos + #writeText <= 1 or pos > sizeX then
-      -- If we're too far off the left then skip.
-      cursor_x = pos + #writeText
-      return
-    elseif pos < 1 then
-      -- Adjust text to fit on screen starting at one.
-      writeText = string.sub(writeText, math.abs(cursor_x) + 2)
-      pos = 1
-    end
-
-    local lineText = text[cursor_y]
-    local lineColor = text_colour[cursor_y]
-    local lineBack = back_colour[cursor_y]
-    local preStop = pos - 1
-    local preStart = math.min(1, preStop)
-    local postStart = pos + string.len(writeText)
-    local postStop = sizeX
-    local sub, rep = string.sub, string.rep
-
-    text[cursor_y] = sub(lineText, preStart, preStop)..writeText..sub(lineText, postStart, postStop)
-    text_colour[cursor_y] = sub(lineColor, preStart, preStop)..rep(cur_text_colour, #writeText)..sub(lineColor, postStart, postStop)
-    back_colour[cursor_y] = sub(lineBack, preStart, preStop)..rep(cur_back_colour, #writeText)..sub(lineBack, postStart, postStop)
-    cursor_x = pos + string.len(writeText)
-  end
-
-  function redirect.blit(writeText, writeFore, writeBack)
-    original.blit(writeText, writeFore, writeBack)
-    dirty = true
-
-    local pos = cursor_x
-
-    -- If we're off the screen then just emulate a write
-    if cursor_y > sizeY or cursor_y < 1 then
-      cursor_x = pos + #writeText
-      return
-    end
-
-    if pos + #writeText <= 1 then
-      --skip entirely.
-      cursor_x = pos + #writeText
-      return
-    elseif pos < 1 then
-      --adjust text to fit on screen starting at one.
-      writeText = string.sub(writeText, math.abs(cursor_x) + 2)
-      writeFore = string.sub(writeFore, math.abs(cursor_x) + 2)
-      writeBack = string.sub(writeBack, math.abs(cursor_x) + 2)
+    -- Adjust text to fit on screen
+    if cursor_x < 1 then
+      writeText = writeText:sub(-cursor_x + 2)
       cursor_x = 1
-    elseif pos > sizeX then
-      --if we're off the edge to the right, skip entirely.
-      cursor_x = pos + #writeText
-      return
+    elseif cursor_x + #writeText > sizeX then
+      writeText = writeText:sub(1, sizeX - cursor_x + 1)
     end
 
     local lineText = text[cursor_y]
@@ -104,14 +76,51 @@ local function create(original)
     local lineBack = back_colour[cursor_y]
     local preStop = cursor_x - 1
     local preStart = math.min(1, preStop)
-    local postStart = cursor_x + string.len(writeText)
+    local postStart = cursor_x + #writeText
+    local postStop = sizeX
+    local sub, rep = string.sub, string.rep
+
+    text[cursor_y] = sub(lineText, preStart, preStop)..writeText..sub(lineText, postStart, postStop)
+    text_colour[cursor_y] = sub(lineColor, preStart, preStop)..rep(cur_text_colour, #writeText)..sub(lineColor, postStart, postStop)
+    back_colour[cursor_y] = sub(lineBack, preStart, preStop)..rep(cur_back_colour, #writeText)..sub(lineBack, postStart, postStop)
+    cursor_x = cursor_x + #writeText
+  end
+
+  function redirect.blit(writeText, writeFore, writeBack)
+    original.blit(writeText, writeFore, writeBack)
+    dirty = true
+
+    -- If we're off the screen then just emulate a write
+    if cursor_y > sizeY or cursor_y < 1 or cursor_x + #writeText <= 1 or cursor_x > sizeX then
+      cursor_x = cursor_x + #writeText
+      return
+    end
+
+    if cursor_x < 1 then
+      --adjust text to fit on screen starting at one.
+      writeText = writeText:sub(-cursor_x + 2)
+      writeFore = writeFore:sub(-cursor_x + 2)
+      writeBack = writeBack:sub(-cursor_x + 2)
+      cursor_x = 1
+    elseif cursor_x + #writeText > sizeX then
+      writeText = writeText:sub(1, sizeX - cursor_x + 1)
+      writeFore = writeFore:sub(1, sizeX - cursor_x + 1)
+      writeBack = writeBack:sub(1, sizeX - cursor_x + 1)
+    end
+
+    local lineText = text[cursor_y]
+    local lineColor = text_colour[cursor_y]
+    local lineBack = back_colour[cursor_y]
+    local preStop = cursor_x - 1
+    local preStart = math.min(1, preStop)
+    local postStart = cursor_x + #writeText
     local postStop = sizeX
     local sub, rep = string.sub, string.rep
 
     text[cursor_y] = sub(lineText, preStart, preStop)..writeText..sub(lineText, postStart, postStop)
     text_colour[cursor_y] = sub(lineColor, preStart, preStop)..writeFore..sub(lineColor, postStart, postStop)
     back_colour[cursor_y] = sub(lineBack, preStart, preStop)..writeBack..sub(lineBack, postStart, postStop)
-    cursor_x = pos + string.len(writeText)
+    cursor_x = cursor_x + #writeText
   end
 
   function redirect.clear()
@@ -271,4 +280,4 @@ local function create(original)
   return redirect
 end
 
-return create
+return { buffer = buffer, empty = empty }

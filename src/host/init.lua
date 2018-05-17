@@ -90,7 +90,7 @@ local framebuffer, encode = require("framebuffer"), require("encode")
 
 -- Create our term buffer and start using it
 local current = term.current()
-local buffer = framebuffer(current)
+local buffer = framebuffer.buffer(current)
 
 term.redirect(buffer)
 term.clear()
