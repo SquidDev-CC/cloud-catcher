@@ -64,6 +64,12 @@ const wss = new WebSocket.Server({
   maxPayload: MAX_PACKET_SIZE,
 });
 
+const sendCallback = (err?: Error) => {
+  if (err) {
+    console.error("Unexpected error when sending", err);
+  }
+};
+
 wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
   const requestUrl = url.parse(req.url || "", true);
   if (!requestUrl || !requestUrl.query || !requestUrl.pathname) return ws.close(WebsocketCodes.UnsupportedData);
@@ -87,7 +93,7 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
       const connection = conn;
       connection.viewers.add(ws);
 
-      if (conn.host && conn.lastTerminal) ws.send(conn.lastTerminal);
+      if (conn.host && conn.lastTerminal) ws.send(conn.lastTerminal, sendCallback);
 
       ws.isAlive = true;
       ws.on("pong", () => ws.isAlive = true);
@@ -106,7 +112,7 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
         }
 
         const host = connection.host;
-        if (host !== null) host.send(message);
+        if (host !== null) host.send(message, sendCallback);
       });
 
       ws.on("close", () => {
@@ -147,13 +153,13 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
         // Store the terminal to forward to connecting clients
         if (code === PacketCode.TerminalContents) connection.lastTerminal = message;
 
-        for (const viewer of connection.viewers) viewer.send(message);
+        for (const viewer of connection.viewers) viewer.send(message, sendCallback);
       });
 
       ws.on("close", () => {
         connection.host = null;
         for (const viewer of connection.viewers) {
-          viewer.send(encodePacket(PacketCode.ConnectionLost));
+          viewer.send(encodePacket(PacketCode.ConnectionLost), sendCallback);
         }
       });
 
@@ -168,13 +174,12 @@ setInterval(() => {
   wss.clients.forEach(ws => {
     const wsa = ws as SessionWebSocket;
     if (wsa.isAlive === false) {
-      console.log("Dead");
       wsa.close();
       return wsa.terminate();
     }
 
     wsa.isAlive = false;
-    wsa.send(encodePacket(PacketCode.ConnectionPing));
+    wsa.send(encodePacket(PacketCode.ConnectionPing), sendCallback);
   });
 }, 15000);
 
