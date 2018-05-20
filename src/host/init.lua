@@ -94,16 +94,19 @@ if term_opts then
     parent_term = framebuffer.empty(true, term.getSize())
   elseif term_opts:find("^(%d+)x(%d+)$") then
     local w, h = term_opts:match("^(%d+)x(%d+)$")
-    -- Enforce some bounds. Note the latter could be much larger, but I'd rather
-    -- you didn't lift it.
     if w == 0 or h == 0 then error("Terminal cannot have 0 size", 0) end
-    if w * h > 2000 then error("Terminal is too large to handle", 0) end
 
     parent_term = framebuffer.empty(true, tonumber(w), tonumber(h))
   else
     error("Unknown format for term: expected \"none\" or \"wxh\"", 0)
   end
 end
+
+-- Enforce some bounds. Note the latter could be much larger and still fit,
+-- within the packet threshold, but when I add rate limiting this'll be the
+-- actual maximum.
+local w, h = parent_term.getSize()
+if w * h > 2000 then error("Terminal is too large to handle", 0) end
 
 -- Let's try to connect to the remote server
 local protocol = result.http and "ws" or "wss"
