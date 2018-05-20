@@ -13,10 +13,11 @@ local function empty(colour, width, height)
   return {
     -- A load of voiding setters
     write = void, blit = void, clear = void, clearLine = void,
-    setCursorPos = void, setCursorBlink = pos,
+    setCursorPos = void, setCursorBlink = void,
     setPaletteColour = void, setPaletteColor = void,
     setTextColour = void, setTextColor = void, setBackgroundColour = void, setBackgroundColor = void,
     getTextColour = void, getTextColor = void, getBackgroundColour = void, getBackgroundColor = void,
+    scroll = void,
 
     -- The few getters we actually use
     isColour = is_colour, isColor = is_colour,

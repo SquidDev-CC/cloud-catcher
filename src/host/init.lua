@@ -3,6 +3,7 @@
 
 -- Cache some globals
 local tonumber = tonumber
+local argparse = require "argparse"
 
 local function is_help(cmd)
   return cmd == "help" or cmd == "--help" or cmd == "-h" or cmd == "-?"
@@ -22,9 +23,13 @@ Subcommands:
               connection.
 ]]):gsub("^%s+", ""):gsub("%s+$", "")
 
-    local subcommand, args = ..., table.pack(select(2, ...))
+    local subcommand = ...
     if subcommand == "edit" or subcommand == "e" then
-      local file = args[1]
+      local arguments = argparse("cloud edit: Edit a file in the remote viewer")
+      arguments:add({ "file" }, { doc = "The file to upload" })
+      local result = arguments:parse(select(2, ...))
+
+      local file = result.file
       if is_help(file) then print(usage) return
       elseif file == nil then printError(usage) error()
       end
@@ -64,40 +69,47 @@ Subcommands:
 end
 
 -- The actual cloud catcher client. Let's do some argument parsing!
-local token = ...
-
 local current_path = shell.getRunningProgram()
 local current_name = fs.getName(current_path)
-local usage = ([[%s: <token>]]):format(current_name)
 
-if token == nil then printError(usage) error()
-elseif is_help(token) then print(usage) return
-end
+--- Here is a collection of libraries which we'll need.
+local framebuffer, encode = require("framebuffer"), require("encode")
 
+local arguments = argparse(current_name .. ": Interact with this computer remotely")
+arguments:add({ "token" }, { doc = "The token to use when connecting" })
+arguments:add({ "--term", "-t" }, { value = true, doc = "Terminal dimensions or none to hide" })
+arguments:add({ "--http", "-H" }, { value = false, doc = "Use HTTP instead of HTTPs" })
+local result = arguments:parse(...)
+
+local token = result.token
 if #token ~= 32 or token:find("[^%a%d]") then
   error("Invalid token (must be 32 alpha-numeric characters)", 0)
 end
 
+local term_opts = result.term
+local previous_term = term.current()
+local parent_term = previous_term
+if term_opts then
+  if term_opts == "none" then
+    parent_term = framebuffer.empty(true, term.getSize())
+  elseif term_opts:find("^(%d+)x(%d+)$") then
+    local w, h = term_opts:match("^(%d+)x(%d+)$")
+    -- Enforce some bounds. Note the latter could be much larger, but I'd rather
+    -- you didn't lift it.
+    if w == 0 or h == 0 then error("Terminal cannot have 0 size", 0) end
+    if w * h > 2000 then error("Terminal is too large to handle", 0) end
+
+    parent_term = framebuffer.empty(true, tonumber(w), tonumber(h))
+  else
+    error("Unknown format for term: expected \"none\" or \"wxh\"", 0)
+  end
+end
+
 -- Let's try to connect to the remote server
-local url = "ws://localhost:8080/host?id=" .. token
+local protocol = result.http and "ws" or "wss"
+local url = protocol .. "://localhost:8080/host?id=" .. token
 local remote, err = http.websocket(url)
-if not remote then error("Cannot create connect to cloud catcher server: " .. err, 0) end
-
---- Here is a collection of libraries which we'll need. We require them as late
--- as possible for ... Well, no particular reason actually as they're bundled
--- anyway
-local framebuffer, encode = require("framebuffer"), require("encode")
-
--- Create our term buffer and start using it
-local current = term.current()
-local buffer = framebuffer.buffer(current)
-
-term.redirect(buffer)
-term.clear()
-term.setCursorPos(1, 1)
-
--- Instantiate our sub-program
-local co = coroutine.create(shell.run)
+if not remote then error("Cannot connect to cloud catcher server: " .. err, 0) end
 
 -- We're all ready to go, so let's inject our API and shell hooks
 do
@@ -161,6 +173,16 @@ do
   end)
 end
 
+-- Instantiate our sub-program
+local co = coroutine.create(shell.run)
+
+-- Create our term buffer and start using it
+local buffer = framebuffer.buffer(parent_term)
+term.redirect(buffer)
+term.clear()
+term.setCursorPos(1, 1)
+
+-- Oh here we are and here we are and here we go
 local ok, res = coroutine.resume(co, "shell")
 
 local last_change, last_timer = os.clock(), nil
@@ -267,9 +289,13 @@ while ok and coroutine.status(co) ~= "dead" do
   end
 end
 
-term.redirect(current)
-term.clear()
-term.setCursorPos(1, 1)
+term.redirect(previous_term)
+if previous_term == parent_term then
+  -- If we were writing to the current terminal then reset it.
+  term.clear()
+  term.setCursorPos(1, 1)
+  if previous_term.endPrivateMode then previous_term.endPrivateMode() end
+end
 
 -- Clear our ugly completion hacks
 _G.cloud_catcher = nil
@@ -277,7 +303,5 @@ shell.clearAlias("cloud")
 shell.getCompletionInfo()[current_path] = nil
 
 if remote ~= nil then remote.close() end
-
-if current.endPrivateMode then current.endPrivateMode() end
 
 if not ok then error(res, 0) end
