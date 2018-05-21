@@ -6,9 +6,10 @@ import { convertKey, convertMouseButton, convertMouseButtons } from "../terminal
 import * as render from "../terminal/render";
 
 export type TerminalProps = {
-  connection: WebSocket,
-  terminal: TerminalData,
   changed: Semaphore,
+  connection: WebSocket,
+  focused: boolean,
+  terminal: TerminalData,
 };
 
 const clamp = (value: number, min: number, max: number) => {
@@ -61,7 +62,7 @@ export class Terminal extends Component<TerminalProps, {}> {
     this.mounted = true;
 
     // Focus on the input element
-    this.inputElem.focus();
+    if (this.props.focused) this.inputElem.focus();
 
     // And let's draw!
     this.queueDraw();
@@ -84,8 +85,9 @@ export class Terminal extends Component<TerminalProps, {}> {
     return this.vdom;
   }
 
-  public componentWillUpdate() {
-    return false;
+  public componentDidUpdate() {
+    this.queueDraw();
+    if (this.props.focused && this.inputElem) this.inputElem.focus();
   }
 
   public queueDraw() {

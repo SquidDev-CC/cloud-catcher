@@ -22,10 +22,11 @@ type FileInfo = {
 };
 
 export type ComputerProps = {
-  settings: Settings,
   connection: WebSocket,
   events: BufferingEventQueue<PacketEvent>,
+  focused: boolean,
   token: Token,
+  settings: Settings,
 };
 
 type ComputerState = {
@@ -60,7 +61,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     this.props.events.detach(this.onPacket);
   }
 
-  public render({ connection, token, settings }: ComputerProps, { activeFile, files, notifications, terminal, terminalChanged }: ComputerState) {
+  public render({ connection, token, settings, focused }: ComputerProps, { activeFile, files, notifications, terminal, terminalChanged }: ComputerState) {
     const fileList = files.map(x => {
       const fileClasses = "file-entry" + (x.name === activeFile ? " active" : "");
       const iconClasses = "file-icon"
@@ -94,9 +95,10 @@ export class Computer extends Component<ComputerProps, ComputerState> {
           {fileList}
         </div>
         {activeInfo == null || activeFile == null
-          ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} />
-          : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly} settings={settings}
-            onChanged={this.createChanged(activeFile)} onSave={this.createSave(activeFile)} />}
+          ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} focused={focused} />
+          : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly} settings={settings} focused={focused}
+            onChanged={this.createChanged(activeFile)}
+            doSave={this.createSave(activeFile)} doClose={this.createClose(activeFile)} />}
       </div>
     </div>;
   }
@@ -111,8 +113,8 @@ export class Computer extends Component<ComputerProps, ComputerState> {
   }
 
   private createClose(fileName: string) {
-    return (e: Event) => {
-      e.stopPropagation();
+    return (e?: Event) => {
+      if (e) e.stopPropagation();
 
       this.setState({
         notifications: this.state.notifications.filter(x => !x.id.startsWith(fileName + "\0")),

@@ -11,12 +11,18 @@ export const createModel = (contents: string, mode?: string) => {
 };
 
 export type EditorProps = {
+  // From the main state
   settings: Settings,
+  focused: boolean,
+
+  // From the computer session
   model: ace.IEditSession,
   readOnly: boolean,
 
+  // A set of actions to call
   onChanged: (dirty: boolean) => void,
-  onSave: (contents: string) => void,
+  doSave: (contents: string) => void,
+  doClose: () => void,
 };
 
 export default class Editor extends Component<EditorProps, {}> {
@@ -30,15 +36,11 @@ export default class Editor extends Component<EditorProps, {}> {
     });
     this.editor.commands.addCommand({
       name: "save",
-      exec: (e: ace.Editor) => this.props.onSave(e.session.getValue()),
+      exec: (e: ace.Editor) => this.props.doSave(e.session.getValue()),
       bindKey: { win: "ctrl-s", mac: "cmd-s" },
     });
 
-    // Soon
-    // this.editor.setKeyboardHandler("ace/keyboard/vim");
-
     this.syncOptions();
-    this.editor.focus();
   }
 
   public componentWillUnmount() {
@@ -52,7 +54,6 @@ export default class Editor extends Component<EditorProps, {}> {
   public componentDidUpdate() {
     if (!this.editor) return;
     this.syncOptions();
-    this.editor.focus();
   }
 
   private syncOptions() {
@@ -63,21 +64,25 @@ export default class Editor extends Component<EditorProps, {}> {
     this.editor.setOption("tabSize", this.props.settings.tabSize);
     this.editor.setOption("showInvisibles", this.props.settings.showInvisible);
 
-    console.log(this.editor.getKeyboardHandler());
     switch (this.props.settings.editorMode) {
       case "emacs":
         this.editor.setKeyboardHandler("ace/keyboard/emacs");
         break;
       case "vim":
         this.editor.setKeyboardHandler("ace/keyboard/vim");
+        (ace as any).config.loadModule("ace/keyboard/vim", (m: any) => {
+          m.Vim.defineEx("write", "w", (cm: any) => cm.ace.execCommand("save"));
+          m.Vim.defineEx("quit", "q", () => this.props.doClose());
+          m.Vim.defineEx("wq", "wq", (cm: any) => { cm.ace.execCommand("save"); this.props.doClose(); });
+        });
         break;
       case "boring":
       default:
         this.editor.setKeyboardHandler(null);
         break;
-
     }
 
+    if (this.props.focused) this.editor.focus();
   }
 
   public render() {

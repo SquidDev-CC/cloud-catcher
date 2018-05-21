@@ -31,18 +31,34 @@ export class Main extends Component<MainProps, MainState> {
     const socket = new WebSocket(`${protocol}//${window.location.host}/view?id=${token}`);
     const events = new BufferingEventQueue<PacketEvent>();
 
+    const settings: Settings = {
+      editorMode: "boring",
+      showInvisible: true,
+      trimWhitespace: true,
+      tabSize: 2,
+
+      darkMode: false,
+      terminalBorder: false,
+    };
+
+    // Sync settings from local storage
+    try {
+      const settingJson = window.localStorage.settings;
+      if (settings !== undefined) {
+        const settingStorage = JSON.parse(settingJson);
+        for (const key of Object.keys(settings)) {
+          const value = settingStorage[key];
+          if (value !== undefined) (settings as any)[key] = value;
+        }
+      }
+    } catch {
+      // Ignore
+    }
+
     this.state = {
       websocket: socket,
       events,
-      settings: {
-        editorMode: "boring",
-        showInvisible: true,
-        trimWhitespace: true,
-        tabSize: 2,
-
-        darkMode: false,
-        terminalBorder: false,
-      },
+      settings,
 
       currentVDom: () => <TokenDisplay token={token} />,
     };
@@ -106,6 +122,15 @@ export class Main extends Component<MainProps, MainState> {
       this.state.settings !== newState.settings;
   }
 
+  public componentDidUpdate() {
+    // Sync settings back to local storage
+    try {
+      window.localStorage.settings = JSON.stringify(this.state.settings);
+    } catch {
+      // Ignore
+    }
+  }
+
   public render(_props: MainProps, state: MainState) {
     return <div class="container">
       {state.currentVDom(state)}
@@ -132,7 +157,8 @@ export class Main extends Component<MainProps, MainState> {
     if (e.code === "Escape") this.setState({ dialogue: undefined });
   }
 
-  private computerVDom = ({ events, websocket, settings }: MainState) => {
-    return <Computer events={events} connection={websocket} token={this.props.token} settings={settings} />
-  };
+  private computerVDom = ({ events, websocket, settings, dialogue }: MainState) => {
+    return <Computer events={events} connection={websocket} token={this.props.token}
+      settings={settings} focused={dialogue === undefined} />;
+  }
 }
