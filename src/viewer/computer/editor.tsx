@@ -1,13 +1,19 @@
-import * as ace from "ace";
+/* import * as ace from "ace"; */
+import * as monaco from "monaco-editor";
 import { Component, h } from "preact";
 import { Settings } from "../settings";
 
-export type Model = ace.IEditSession;
+export type Model = {
+  text: monaco.editor.ITextModel,
+  view?: monaco.editor.ICodeEditorViewState,
+};
 
-export const createModel = (contents: string, mode?: string) => {
-  const editor = ace.createEditSession(contents);
-  if (mode) editor.setMode(mode);
-  return editor;
+export const createModel = (contents: string, mode?: string): Model => {
+  // We could specify the path, but then that has to be unique and it introduces all sorts of issues.
+  const text = monaco.editor.createModel(contents, mode);
+  text.updateOptions({ trimAutoWhitespace: true });
+  text.detectIndentation(true, 2);
+  return { text };
 };
 
 export type EditorProps = {
@@ -16,7 +22,7 @@ export type EditorProps = {
   focused: boolean,
 
   // From the computer session
-  model: ace.IEditSession,
+  model: Model,
   readOnly: boolean,
 
   // A set of actions to call
@@ -26,18 +32,24 @@ export type EditorProps = {
 };
 
 export default class Editor extends Component<EditorProps, {}> {
-  private editor?: ace.Editor;
+  private editor?: monaco.editor.IStandaloneCodeEditor;
 
   public componentDidMount() {
-    this.editor = ace.edit(this.base);
-
-    this.editor.on("input", () => {
-      this.props.onChanged(!this.props.model.getUndoManager().isClean());
+    this.editor = monaco.editor.create(this.base, {
+      roundedSelection: false,
     });
-    this.editor.commands.addCommand({
-      name: "save",
-      exec: (e: ace.Editor) => this.props.doSave(e.session.getValue()),
-      bindKey: { win: "ctrl-s", mac: "cmd-s" },
+
+    this.editor.addAction({
+      id: "save",
+      label: "Save",
+      keybindings: [
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S,
+      ],
+      contextMenuGroupId: "file",
+      contextMenuOrder: 1.5,
+      run: editor => {
+        this.props.doSave(editor.getValue());
+      },
     });
 
     this.syncOptions();
@@ -45,9 +57,21 @@ export default class Editor extends Component<EditorProps, {}> {
 
   public componentWillUnmount() {
     if (this.editor) {
+      // Save the view state back to the model
+      if (this.props.model) {
+        this.props.model.view = this.editor.saveViewState();
+      }
+
       // We set a new session to prevent destroying it when losing the editor
-      this.editor.setSession(new ace.EditSession(""));
-      this.editor.destroy();
+      /* this.editor.setSession(new ace.EditSession("")); */
+      this.editor.dispose();
+    }
+  }
+
+  public componentWillUpdate() {
+    // Save the view state back to the model
+    if (this.editor && this.props.model) {
+      this.props.model.view = this.editor.saveViewState();
     }
   }
 
@@ -58,29 +82,20 @@ export default class Editor extends Component<EditorProps, {}> {
 
   private syncOptions() {
     if (!this.editor) return;
-    this.editor.setSession(this.props.model);
-    this.editor.setReadOnly(this.props.readOnly);
+    const { settings, model, readOnly } = this.props;
 
-    this.editor.setOption("tabSize", this.props.settings.tabSize);
-    this.editor.setOption("showInvisibles", this.props.settings.showInvisible);
+    this.editor.setModel(model.text);
+    if (model.view) this.editor.restoreViewState(model.view);
 
-    switch (this.props.settings.editorMode) {
-      case "emacs":
-        this.editor.setKeyboardHandler("ace/keyboard/emacs");
-        break;
-      case "vim":
-        this.editor.setKeyboardHandler("ace/keyboard/vim");
-        (ace as any).config.loadModule("ace/keyboard/vim", (m: any) => {
-          m.Vim.defineEx("write", "w", (cm: any) => cm.ace.execCommand("save"));
-          m.Vim.defineEx("quit", "q", () => this.props.doClose());
-          m.Vim.defineEx("wq", "wq", (cm: any) => { cm.ace.execCommand("save"); this.props.doClose(); });
-        });
-        break;
-      case "boring":
-      default:
-        this.editor.setKeyboardHandler(null);
-        break;
-    }
+    this.editor.updateOptions({
+      renderWhitespace: settings.showInvisible ? "boundary" : "none",
+      autoIndent: true,
+      readOnly,
+    });
+
+    monaco.editor.setTheme(settings.darkMode ? "vs-dark" : "vs");
+
+    // TODO: Tab size, trim auto whitespace
 
     if (this.props.focused) this.editor.focus();
   }

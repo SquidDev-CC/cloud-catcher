@@ -6,11 +6,11 @@ export default {
     file: 'public/assets/main.js',
     format: 'iife',
     globals: {
-      "ace": "ace",
+      "monaco-editor": "monaco"
     }
   },
   plugins: [
     resolve(),
   ],
-  external: ["ace"],
+  external: ["monaco-editor"],
 };

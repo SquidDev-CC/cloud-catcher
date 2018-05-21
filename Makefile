@@ -11,7 +11,7 @@ all: public/assets/main.js build
 clean:
 	rm -rf build dist
 
-dist: package.json package-lock.json build public/index.html public/404.html public/assets/main.css public/assets/main.js public/assets/termFont.png public/cloud.lua
+dist: package.json package-lock.json build public/index.html public/404.html public/assets/main.css public/assets/main.js public/assets/monaco-worker.js public/assets/termFont.png public/cloud.lua
 	rm -rf dist
 	mkdir dist
 	cp package.json package-lock.json dist
@@ -28,6 +28,7 @@ dist: package.json package-lock.json build public/index.html public/404.html pub
 	cp public/assets/termFont.png dist/public/assets
 	uglifycss public/assets/main.css > dist/public/assets/main.css
 	uglifyjs public/assets/main.js > dist/public/assets/main.js
+	uglifyjs public/assets/monaco-worker.js > dist/public/assets/monaco-worker.js
 
 lint: $(TS) tsconfig.json tslint.json
 	tslint --project tsconfig.json
@@ -43,7 +44,7 @@ public/cloud.lua: $(LUA)
 	cd src/host; \
 	lua _make.lua ../../public/cloud.lua
 
-serve: build
+serve: build public/cloud.lua
 	tsc --project tsconfig.json --watch & \
 	rollup -c --watch & \
 	node -r esm build/server & \

@@ -12,13 +12,14 @@ import { Notification, NotificationBody, NotificationKind, Notifications } from 
 type FileInfo = {
   name: string,
   model: editor.Model,
+  readOnly: boolean,
 
   remoteChecksum: number,
   updateChecksum?: number,
   updateMark?: number,
 
+  savedVersionId: number,
   modified: boolean,
-  readOnly: boolean,
 };
 
 export type ComputerProps = {
@@ -139,7 +140,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
 
       // So technically we should update the state, but I'm just mutating
       // for now as it doesn't change how things are displayed. I'm sorry.
-      file.updateMark = file.model.getUndoManager().getRevision();
+      file.updateMark = file.model.text.getAlternativeVersionId();
       file.updateChecksum = fletcher32(contents);
 
       this.props.connection.send(encodePacket(PacketCode.FileContents) +
@@ -179,16 +180,27 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       let files = this.state.files;
       let file = files.find(x => x.name === name);
       if (!file) {
-        const model = editor.createModel(contents, "ace/mode/lua");
+        const model = editor.createModel(contents, "lua");
+
+        // Setup some event listeners for this model
+        model.text.onDidChangeContent(() => {
+          const file = this.state.files.find(x => x.name === name);
+          if (!file) return;
+
+          const modified = model.text.getAlternativeVersionId() !== file.savedVersionId;
+          if (modified !== file.modified) this.setFileState(file, { modified });
+        });
 
         file = {
           name, model,
+          readOnly: (flags & FileOpenFlags.ReadOnly) !== 0,
 
           remoteChecksum: fletcher32(contents),
 
           modified: false,
-          readOnly: (flags & FileOpenFlags.ReadOnly) !== 0,
+          savedVersionId: model.text.getAlternativeVersionId(),
         };
+
         files = [...files, file].sort((a, b) => a.name.localeCompare(b.name));
       } else {
         // TODO: Add support for updating
@@ -211,9 +223,10 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         file.remoteChecksum = checksum;
 
         if (file.updateChecksum === checksum) {
-          file.model.getUndoManager().bookmark(file.updateMark);
           this.setFileState(file, {
-            modified: !file.model.getUndoManager().isClean(),
+            savedVersionId: file.updateMark!,
+            modified: file.model.text.getAlternativeVersionId() !== file.updateMark,
+
             updateMark: undefined,
             updateChecksum: undefined,
           });

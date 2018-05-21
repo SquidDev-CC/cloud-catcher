@@ -32,10 +32,8 @@ export class Main extends Component<MainProps, MainState> {
     const events = new BufferingEventQueue<PacketEvent>();
 
     const settings: Settings = {
-      editorMode: "boring",
       showInvisible: true,
       trimWhitespace: true,
-      tabSize: 2,
 
       darkMode: false,
       terminalBorder: false,
