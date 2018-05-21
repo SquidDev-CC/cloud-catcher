@@ -3,6 +3,7 @@ import { FileOpenFlags, PacketCode, encodeByte, encodePacket, encodeU32 } from "
 import { Token } from "../../token";
 import { BufferingEventQueue, PacketEvent, Semaphore } from "../event";
 import { decode10TerminalChanged, decode30FileContents, decode31FileAccept, fletcher32 } from "../packet";
+import { Settings } from "../settings";
 import { Terminal } from "../terminal/component";
 import { TerminalData } from "../terminal/data";
 import Editor, * as editor from "./editor";
@@ -21,6 +22,7 @@ type FileInfo = {
 };
 
 export type ComputerProps = {
+  settings: Settings,
   connection: WebSocket,
   events: BufferingEventQueue<PacketEvent>,
   token: Token,
@@ -58,7 +60,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     this.props.events.detach(this.onPacket);
   }
 
-  public render({ connection, token }: ComputerProps, { activeFile, files, notifications, terminal, terminalChanged }: ComputerState) {
+  public render({ connection, token, settings }: ComputerProps, { activeFile, files, notifications, terminal, terminalChanged }: ComputerState) {
     const fileList = files.map(x => {
       const fileClasses = "file-entry" + (x.name === activeFile ? " active" : "");
       const iconClasses = "file-icon"
@@ -93,7 +95,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         </div>
         {activeInfo == null || activeFile == null
           ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} />
-          : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly}
+          : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly} settings={settings}
             onChanged={this.createChanged(activeFile)} onSave={this.createSave(activeFile)} />}
       </div>
     </div>;

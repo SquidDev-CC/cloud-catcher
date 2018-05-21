@@ -5,6 +5,7 @@ import { Token } from "../token";
 import { Computer } from "./computer";
 import { BufferingEventQueue, PacketEvent } from "./event";
 import { LostConnection, TokenDisplay, UnknownError } from "./screens";
+import { Settings } from "./settings";
 
 export type MainProps = {
   token: Token;
@@ -13,9 +14,10 @@ export type MainProps = {
 type MainState = {
   websocket: WebSocket;
   events: BufferingEventQueue<PacketEvent>,
+  settings: Settings,
 
-  computerVDom: JSX.Element,
-  currentVDom: JSX.Element,
+  currentVDom: (state: MainState) => JSX.Element,
+  dialogue?: (state: MainState) => JSX.Element,
 };
 
 export class Main extends Component<MainProps, MainState> {
@@ -32,23 +34,31 @@ export class Main extends Component<MainProps, MainState> {
     this.state = {
       websocket: socket,
       events,
+      settings: {
+        editorMode: "boring",
+        showInvisible: true,
+        trimWhitespace: true,
+        tabSize: 2,
 
-      computerVDom: <Computer events={events} connection={socket} token={token} />,
-      currentVDom: <TokenDisplay token={token} />,
+        darkMode: false,
+        terminalBorder: false,
+      },
+
+      currentVDom: () => <TokenDisplay token={token} />,
     };
 
     socket.addEventListener("error", event => {
       if (socket.readyState <= WebSocket.OPEN) socket.close(400);
       console.log(event);
 
-      this.setState({ currentVDom: <UnknownError error={`${event}`} /> });
+      this.setState({ currentVDom: () => <UnknownError error={`${event}`} /> });
     });
 
     socket.addEventListener("close", event => {
       console.error(event);
 
       this.setState({
-        currentVDom: <UnknownError error="The socket was closed. Is your internet down?" />,
+        currentVDom: () => <UnknownError error="The socket was closed. Is your internet down?" />,
       });
     });
 
@@ -60,7 +70,7 @@ export class Main extends Component<MainProps, MainState> {
       switch (code) {
         case PacketCode.ConnectionAbuse:
         case PacketCode.ConnectionLost:
-          this.setState({ currentVDom: <LostConnection token={token} /> });
+          this.setState({ currentVDom: () => <LostConnection token={token} /> });
           break;
 
         case PacketCode.ConnectionPing:
@@ -70,12 +80,12 @@ export class Main extends Component<MainProps, MainState> {
         case PacketCode.TerminalContents:
         case PacketCode.FileContents:
           events.enqueue(new PacketEvent(code, data.substr(2)));
-          this.setState({ currentVDom: this.state.computerVDom });
+          this.setState({ currentVDom: this.computerVDom });
           break;
 
         case PacketCode.FileAccept:
         case PacketCode.FileReject:
-          events.enqueue(new PacketEvent(code, data.substr(2)));
+          events.offer(new PacketEvent(code, data.substr(2)));
           break;
 
         default:
@@ -91,10 +101,38 @@ export class Main extends Component<MainProps, MainState> {
   }
 
   public shouldComponentUpdate(_props: MainProps, newState: MainState) {
-    return this.state.currentVDom !== newState.currentVDom;
+    return this.state.currentVDom !== newState.currentVDom ||
+      this.state.dialogue !== newState.dialogue ||
+      this.state.settings !== newState.settings;
   }
 
   public render(_props: MainProps, state: MainState) {
-    return state.currentVDom;
+    return <div class="container">
+      {state.currentVDom(state)}
+      <div class="settings-cog" title="Configure how CloudCatcher behaves" onClick={this.openSettings}>&#x2699;</div>
+      {
+        state.dialogue ?
+          <div class="dialogue-overlay" onClick={this.closeDialogueClick}>
+            {state.dialogue(state)}
+          </div> : ""
+      }
+    </div>;
   }
+
+  private openSettings = () => {
+    const update = (s: Settings) => this.setState({ settings: s });
+    this.setState({ dialogue: s => <Settings settings={s.settings} update={update} /> });
+  }
+
+  private closeDialogueClick = (e: MouseEvent) => {
+    if (e.target === e.currentTarget) this.setState({ dialogue: undefined });
+  }
+
+  private closeDialogueKey = (e: KeyboardEvent) => {
+    if (e.code === "Escape") this.setState({ dialogue: undefined });
+  }
+
+  private computerVDom = ({ events, websocket, settings }: MainState) => {
+    return <Computer events={events} connection={websocket} token={this.props.token} settings={settings} />
+  };
 }

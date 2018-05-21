@@ -22,6 +22,7 @@ export class BufferingEventQueue<T> {
     if (index > -1) this.listeners.splice(index, 1);
   }
 
+  /** Fire the event if listeners exist, buffering it if not */
   public enqueue(event: T) {
     if (this.listeners.length === 0) {
       // If we've got no listeners then buffer them up
@@ -29,6 +30,11 @@ export class BufferingEventQueue<T> {
     } else {
       for (const listener of this.listeners) listener(event);
     }
+  }
+
+  /** Fire the event if listeners exist, discarding it if not */
+  public offer(event: T) {
+    for (const listener of this.listeners) listener(event);
   }
 }
 

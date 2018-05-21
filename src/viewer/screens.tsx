@@ -13,7 +13,7 @@ const genSetup = (token: string) =>
   </pre>;
 
 export const TokenDisplay = ({ token }: TokenDisplayProps) => {
-  return <div class="dialogue-view">
+  return <div class="info-view">
     <h2>Getting started</h2>
     {genSetup(token)}
   </div>;
@@ -24,7 +24,7 @@ export type LostConnectionProps = {
 };
 
 export const LostConnection = ({ token }: LostConnectionProps) => {
-  return <div class="dialogue-view">
+  return <div class="info-view">
     <h2>Connection Lost</h2>
     <p>We've lost our connection to this computer. Maybe try restarting the script:</p>
     {genSetup(token)}
@@ -36,7 +36,7 @@ export type UnknownErrorProps = {
 };
 
 export const UnknownError = ({ error }: UnknownErrorProps) => {
-  return <div class="dialogue-view error-view">
+  return <div class="info-view error-view">
     <h2>An error occured</h2>
     <pre>{error}</pre>
   </div>;

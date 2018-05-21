@@ -4,7 +4,13 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
-html, body, #page { height: 100%; margin: 0px;padding: 0px;border: none;}
+html, body, .container {
+  height: 100vh;
+  width: 100vw;
+  margin: 0px;
+  padding: 0px;
+  border: none;
+}
 
 pre, code {
   font-family: "Consolas", "Courier New" monospace;
@@ -13,8 +19,16 @@ pre, code {
 
 pre { padding: 10px; }
 
-.dialogue-view {
-  margin: 80px auto;
+.tiny-text {
+  font-weight: 200;
+  font-size: 0.8em;
+  colour: #aaa;
+}
+
+.info-view {
+  position: relative;
+  top: 80px;
+  margin: 0px auto;
   max-width: 800px;
   padding: 0 10px;
 
@@ -164,3 +178,53 @@ pre { padding: 10px; }
 .notification-ok { border: 1px solid #2dff31; }
 .notification-ok .notification-kind { background-color: #2dff31; }
 .notification-ok .notification-kind span:before { content: "Success"; }
+
+.settings-cog {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    opacity: 0.6;
+    z-index: 50;
+
+    cursor: pointer;
+}
+
+.settings-cog:hover { opacity: 1; }
+
+.dialogue-overlay {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+
+  z-index: 150; /* Over notification and cogs */
+
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.dialogue-box {
+  position: relative;
+  top: 80px;
+  margin: 0px auto;
+  padding: 20px;
+  width: 800px;
+
+  background: white;
+}
+
+.form-group {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.form-group > label {
+  flex-basis: 50%;
+  padding: 10px;
+  box-sizing: border-box;
+  font-weight: 500;
+}
+
+.form-group input, .form-group select {
+  margin: 0px 5px;
+}

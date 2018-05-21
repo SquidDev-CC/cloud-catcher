@@ -1,5 +1,6 @@
 import * as ace from "ace";
 import { Component, h } from "preact";
+import { Settings } from "../settings";
 
 export type Model = ace.IEditSession;
 
@@ -10,6 +11,7 @@ export const createModel = (contents: string, mode?: string) => {
 };
 
 export type EditorProps = {
+  settings: Settings,
   model: ace.IEditSession,
   readOnly: boolean,
 
@@ -35,8 +37,7 @@ export default class Editor extends Component<EditorProps, {}> {
     // Soon
     // this.editor.setKeyboardHandler("ace/keyboard/vim");
 
-    this.editor.setSession(this.props.model);
-    this.editor.setReadOnly(this.props.readOnly);
+    this.syncOptions();
     this.editor.focus();
   }
 
@@ -49,11 +50,34 @@ export default class Editor extends Component<EditorProps, {}> {
   }
 
   public componentDidUpdate() {
-    if (this.editor) {
-      this.editor.setSession(this.props.model);
-      this.editor.setReadOnly(this.props.readOnly);
-      this.editor.focus();
+    if (!this.editor) return;
+    this.syncOptions();
+    this.editor.focus();
+  }
+
+  private syncOptions() {
+    if (!this.editor) return;
+    this.editor.setSession(this.props.model);
+    this.editor.setReadOnly(this.props.readOnly);
+
+    this.editor.setOption("tabSize", this.props.settings.tabSize);
+    this.editor.setOption("showInvisibles", this.props.settings.showInvisible);
+
+    console.log(this.editor.getKeyboardHandler());
+    switch (this.props.settings.editorMode) {
+      case "emacs":
+        this.editor.setKeyboardHandler("ace/keyboard/emacs");
+        break;
+      case "vim":
+        this.editor.setKeyboardHandler("ace/keyboard/vim");
+        break;
+      case "boring":
+      default:
+        this.editor.setKeyboardHandler(null);
+        break;
+
     }
+
   }
 
   public render() {

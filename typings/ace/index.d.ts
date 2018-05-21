@@ -1140,7 +1140,7 @@ declare namespace Ace {
      * Sets a new key handler, such as "vim" or "windows".
      * @param keyboardHandler The new key handler
     **/
-    setKeyboardHandler(keyboardHandler: string): void;
+    setKeyboardHandler(keyboardHandler: string | null): void;
 
     /**
      * Returns the keyboard handler, such as "vim" or "windows".
