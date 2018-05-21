@@ -117,10 +117,14 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     return (e?: Event) => {
       if (e) e.stopPropagation();
 
+      const file = this.state.files.find(x => x.name === fileName);
+
       this.setState({
         notifications: this.state.notifications.filter(x => !x.id.startsWith(fileName + "\0")),
         files: this.state.files.filter(x => x.name !== fileName),
         activeFile: this.state.activeFile === fileName ? null : this.state.activeFile,
+      }, () => {
+        if (file) file.model.text.dispose();
       });
     };
   }
@@ -180,7 +184,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       let files = this.state.files;
       let file = files.find(x => x.name === name);
       if (!file) {
-        const model = editor.createModel(contents, "lua");
+        const model = editor.createModel(contents, "luax");
 
         // Setup some event listeners for this model
         model.text.onDidChangeContent(() => {

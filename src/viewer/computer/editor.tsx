@@ -1,5 +1,6 @@
-import { Component, h } from "preact";
 import * as monaco from "monaco-editor";
+import { Component, h } from "preact";
+import "../../editor/lua";
 import { Settings } from "../settings";
 
 export type Model = {
@@ -36,6 +37,7 @@ export default class Editor extends Component<EditorProps, {}> {
   public componentDidMount() {
     this.editor = monaco.editor.create(this.base, {
       roundedSelection: false,
+      autoIndent: true,
     });
 
     this.editor.addAction({
@@ -91,7 +93,6 @@ export default class Editor extends Component<EditorProps, {}> {
 
     this.editor.updateOptions({
       renderWhitespace: settings.showInvisible ? "boundary" : "none",
-      autoIndent: true,
       readOnly,
     });
 

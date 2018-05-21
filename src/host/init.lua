@@ -102,11 +102,9 @@ if term_opts then
   end
 end
 
--- Enforce some bounds. Note the latter could be much larger and still fit,
--- within the packet threshold, but when I add rate limiting this'll be the
--- actual maximum.
+-- Enforce some bounds.
 local w, h = parent_term.getSize()
-if w * h > 2000 then error("Terminal is too large to handle", 0) end
+if w * h > 5000 then error("Terminal is too large to handle", 0) end
 
 -- Let's try to connect to the remote server
 local protocol = result.http and "ws" or "wss"
