@@ -10,6 +10,7 @@ html, body, .container {
   margin: 0px;
   padding: 0px;
   border: none;
+  overflow: hidden; /* An ugly hack, but it works */
 }
 
 pre, code {

@@ -17,23 +17,20 @@
       </div>
     </div>
 
-    <!-- Setup the Monaco editor -->
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.13.1/min/vs/loader.js"></script>
     <script>
-      require.config({ paths: {
-        "vs": "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.13.1/min/vs/",
-        "main": "assets/"
-      } });
-
+      var require = { paths: { "vs": "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.13.1/min/vs/" } };
       window.MonacoEnvironment = {
         getWorkerUrl: function(workerId, label) {
           return "assets/monaco-worker.js"
         }
       };
-
-      require(["vs/editor/editor.main"], function () {
-        require(["main/main"], function() {} );
-      });
+    </script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.13.1/min/vs/loader.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.13.1/min/vs/editor/editor.main.nls.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.13.1/min/vs/editor/editor.main.js"></script>
+    <script type="text/javascript" src="assets/main.js"></script>
+    <script type="text/javascript">
+      require(["vs/editor/editor.main", "cloud-catcher"], function(_, start) { start (); });
     </script>
   </body>
 </html>

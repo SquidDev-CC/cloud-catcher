@@ -1,6 +1,5 @@
-/* import * as ace from "ace"; */
-import * as monaco from "monaco-editor";
 import { Component, h } from "preact";
+import * as monaco from "monaco-editor";
 import { Settings } from "../settings";
 
 export type Model = {
@@ -48,6 +47,9 @@ export default class Editor extends Component<EditorProps, {}> {
       contextMenuGroupId: "file",
       contextMenuOrder: 1.5,
       run: editor => {
+        if (this.props.settings.trimWhitespace) {
+          editor.getAction("editor.action.trimTrailingWhitespace").run();
+        }
         this.props.doSave(editor.getValue());
       },
     });

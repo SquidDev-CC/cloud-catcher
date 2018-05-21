@@ -9,9 +9,6 @@
     "newLine": "LF",
     "outDir": "build",
     "baseUrl": ".",
-    "paths": {
-      "ace": [ "./typings/ace" ]
-    },
 
     "forceConsistentCasingInFileNames":true,
     "strict": true,
