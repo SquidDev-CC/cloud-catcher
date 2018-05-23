@@ -1,8 +1,8 @@
 import { Component, h } from "preact";
-import { FileOpenFlags, PacketCode, encodeByte, encodePacket, encodeU32 } from "../../network";
+import { PacketCode, FileAction, FileActionFlags, FileConsume, encodePacket } from "../../network";
 import { Token } from "../../token";
 import { BufferingEventQueue, PacketEvent, Semaphore } from "../event";
-import { decode10TerminalChanged, decode30FileContents, decode31FileAccept, fletcher32 } from "../packet";
+import { fletcher32 } from "../packet";
 import { Settings } from "../settings";
 import { Terminal } from "../terminal/component";
 import { TerminalData } from "../terminal/data";
@@ -147,10 +147,19 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       file.updateMark = file.model.text.getAlternativeVersionId();
       file.updateChecksum = fletcher32(contents);
 
-      this.props.connection.send(encodePacket(PacketCode.FileContents) +
-        encodeByte(0) + encodeU32(file.remoteChecksum) +
-        file.name + "\0" +
-        contents);
+      this.props.connection.send(encodePacket({
+        packet: PacketCode.FileAction,
+        id: 0,
+
+        actions: [{
+          file: file.name,
+          checksum: file.remoteChecksum,
+          // TODO: Investigate patching
+          action: FileAction.Replace,
+          flags: 0,
+          contents,
+        }],
+      }));
     };
   }
 
@@ -168,95 +177,115 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     this.setState({ notifications: this.state.notifications.filter(x => x.id !== id) });
   }
 
-  private onPacket = (event: PacketEvent) => {
-    if (event.code === PacketCode.TerminalContents) {
-      decode10TerminalChanged(event.message, this.state.terminal);
-      this.state.terminalChanged.signal();
-    } else if (event.code === PacketCode.FileContents) {
-      const packet = decode30FileContents(event.message);
-      if (!packet) {
-        console.error("Could not decode file contents packet");
-        return; // We could log an error, but this'll do.
-      }
+  private onPacket = ({ packet }: PacketEvent) => {
+    if (packet.packet === PacketCode.TerminalContents) {
 
-      const { name, contents, flags } = packet;
+      const { terminal, terminalChanged } = this.state;
 
-      let files = this.state.files;
-      let file = files.find(x => x.name === name);
-      if (!file) {
-        const model = editor.createModel(contents, "luax");
+      // TODO: Simplify our storage of terminals.
+      // TODO: Palettes
+      terminal.resize(packet.width, packet.height);
 
-        // Setup some event listeners for this model
-        model.text.onDidChangeContent(() => {
-          const file = this.state.files.find(x => x.name === name);
-          if (!file) return;
+      terminal.cursorX = packet.cursorX;
+      terminal.cursorY = packet.cursorY;
+      terminal.cursorBlink = packet.cursorBlink;
 
-          const modified = model.text.getAlternativeVersionId() !== file.savedVersionId;
-          if (modified !== file.modified) this.setFileState(file, { modified });
-        });
+      terminal.text = packet.text;
+      terminal.fore = packet.fore;
+      terminal.back = packet.back;
 
-        file = {
-          name, model,
-          readOnly: (flags & FileOpenFlags.ReadOnly) !== 0,
+      terminalChanged.signal();
+    } else if (packet.packet === PacketCode.FileAction) {
+      let { files, activeFile } = this.state;
+      files = [...files];
 
-          remoteChecksum: fletcher32(contents),
+      let results = packet.actions.map(({ file: name, action, flags, checksum, contents }) => {
+        switch (action) {
+          case FileAction.Delete:
+            files = files.filter(x => x.name !== name);
+            if (activeFile === name) activeFile = null;
+            return { file: name, result: true };
 
-          modified: false,
-          savedVersionId: model.text.getAlternativeVersionId(),
-        };
+          case FileAction.Replace: {
+            let file = files.find(x => x.name === name);
+            if (flags & FileActionFlags.Open) activeFile = name;
+            if (!file) {
+              const model = editor.createModel(contents, "luax");
 
-        files = [...files, file].sort((a, b) => a.name.localeCompare(b.name));
-      } else {
-        // TODO: Add support for updating
-      }
+              // Setup some event listeners for this model
+              model.text.onDidChangeContent(() => {
+                const file = this.state.files.find(x => x.name === name);
+                if (!file) return;
 
-      this.setState({
-        files,
-        activeFile: (flags & FileOpenFlags.Edit) ? file.name : this.state.activeFile,
-      });
-    } else if (event.code === PacketCode.FileAccept) {
-      const packet = decode31FileAccept(event.message);
-      if (!packet) {
-        console.error("Received malformed file accept packet");
-        return;
-      }
+                const modified = model.text.getAlternativeVersionId() !== file.savedVersionId;
+                if (modified !== file.modified) this.setFileState(file, { modified });
+              });
 
-      const { name, checksum } = packet;
-      const file = this.state.files.find(x => x.name === name);
-      if (file) {
-        file.remoteChecksum = checksum;
+              file = {
+                name, model,
+                readOnly: (flags & FileActionFlags.ReadOnly) !== 0,
 
-        if (file.updateChecksum === checksum) {
-          this.setFileState(file, {
-            savedVersionId: file.updateMark!,
-            modified: file.model.text.getAlternativeVersionId() !== file.updateMark,
+                remoteChecksum: fletcher32(contents),
 
-            updateMark: undefined,
-            updateChecksum: undefined,
-          });
+                modified: false,
+                savedVersionId: model.text.getAlternativeVersionId(),
+              };
 
-          this.removeFileNotification(file, "update");
-        } else {
-          this.pushFileNotification(file, NotificationKind.Warn, "update",
-            <span>
-              <code>{file.name}</code> has been changed, you may want to close and reopen to update it.
-            </span>);
+              files.push(file);
+
+              return { file: name, result: true };
+            } else if (file.remoteChecksum === checksum || (flags & FileActionFlags.Force)) {
+              file.model.text.setValue(contents);
+              file.remoteChecksum = checksum;
+              return { file: name, result: true };
+            } else {
+              return { file: name, result: false };
+            }
+          }
+
+          default:
+            // TODO: Support for patch
+            return { file: name, result: false };
         }
-      }
-    } else if (event.code === PacketCode.FileReject) {
-      const packet = decode31FileAccept(event.message);
-      if (!packet) {
-        console.error("Received malformed file reject packet");
-        return;
-      }
+      });
 
-      const { name, checksum } = packet;
-      const file = this.state.files.find(x => x.name === name);
-      if (file && file.updateChecksum) {
-        this.pushFileNotification(file, NotificationKind.Error, "update",
-          <span>
-            <code>{file.name}</code> could not be saved as it was changed on the remote client.
-          </span>);
+      files = files.sort((a, b) => a.name.localeCompare(b.name));
+      this.setState({ files, activeFile });
+
+      // TODO: Send results back to the broadcaster.
+    } else if (packet.packet === PacketCode.FileConsume) {
+      for (const info of packet.files) {
+        const { file: name, result, checksum } = info;
+        const file = this.state.files.find(x => x.name === name);
+        if (file) {
+          file.remoteChecksum = checksum;
+
+          switch (result) {
+            case FileConsume.OK:
+              if (file.updateChecksum === checksum) {
+                this.setFileState(file, {
+                  savedVersionId: file.updateMark!,
+                  modified: file.model.text.getAlternativeVersionId() !== file.updateMark,
+
+                  updateMark: undefined,
+                  updateChecksum: undefined,
+                });
+
+                this.removeFileNotification(file, "update");
+              } else {
+                this.pushFileNotification(file, NotificationKind.Warn, "update",
+                  <span><code>{file.name}</code> has been changed, you may want to close and reopen to update it.</span>);
+              }
+              break;
+
+            case FileConsume.Reject:
+              if (file.updateChecksum) {
+                this.pushFileNotification(file, NotificationKind.Error, "update",
+                  <span><code>{file.name}</code> could not be saved as it was changed on the remote client.</span>);
+              }
+              break;
+          }
+        }
       }
     }
   }

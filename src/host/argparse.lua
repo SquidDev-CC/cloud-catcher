@@ -120,10 +120,14 @@ function parser:parse(...)
 end
 
 local function get_usage(arg)
-  if arg.argument then return arg.mvar
-  elseif arg.value then return arg.names[1] .. "=" .. arg.mvar
-  else return arg.names[1]
+  local name
+  if arg.argument then name = arg.mvar
+  elseif arg.value then name = arg.names[1] .. "=" .. arg.mvar
+  else name = arg.names[1]
   end
+
+  if #arg.names > 1 then name = name .. "," .. table.concat(arg.names, ",", 2) end
+  return name
 end
 
 local function create(prefix)
@@ -144,7 +148,7 @@ local function create(prefix)
       print("USAGE")
       local max = 0
       for i = 1, #parser.list do max = math.max(max, #get_usage(parser.list[i])) end
-      local format = "%" .. (max +1 ) .. "s %s"
+      local format = " %-" .. max .. "s %s"
 
       for i = 1, #parser.list do
         local arg = parser.list[i]
@@ -158,4 +162,8 @@ local function create(prefix)
   return parser
 end
 
-return create
+local function is_help(cmd)
+  return cmd == "help" or cmd == "--help" or cmd == "-h" or cmd == "-?"
+end
+
+return { create = create, is_help = is_help }

@@ -1,5 +1,7 @@
 --- Just another frame buffer, but this one is serialisable!
 
+local stringify = require("json").stringify
+
 local colour_lookup = {}
 for i = 0, 16 do
   colour_lookup[string.format("%x", i)] = 2 ^ i
@@ -32,6 +34,7 @@ local function buffer(original)
   local text_colour = {}
   local back_colour = {}
   local palette = {}
+  local palette_24 = {}
 
   local cursor_x, cursor_y = 1, 1
 
@@ -50,6 +53,7 @@ local function buffer(original)
     for i = 0, 15 do
       local c = 2 ^ i
       palette[c] = { original.getPaletteColour( c ) }
+      palette_24[c] = colours.rgb8(original.getPaletteColour( c ))
     end
   end
 
@@ -116,7 +120,7 @@ local function buffer(original)
     local preStart = math.min(1, preStop)
     local postStart = cursor_x + #writeText
     local postStop = sizeX
-    local sub, rep = string.sub, string.rep
+    local sub = string.sub
 
     text[cursor_y] = sub(lineText, preStart, preStop)..writeText..sub(lineText, postStart, postStop)
     text_colour[cursor_y] = sub(lineColor, preStart, preStop)..writeFore..sub(lineColor, postStart, postStop)
@@ -230,12 +234,14 @@ local function buffer(original)
       if not palcol then error("Invalid colour (got " .. tostring(colour) .. ")", 2) end
       if type(r) == "number" and g == nil and b == nil then
           palcol[1], palcol[2], palcol[3] = colours.rgb8(r)
+          palette_24[colour] = r
       else
           if type(r) ~= "number" then error("bad argument #2 (expected number, got " .. type(r) .. ")", 2) end
           if type(g) ~= "number" then error("bad argument #3 (expected number, got " .. type(g) .. ")", 2) end
           if type(b) ~= "number" then error("bad argument #4 (expected number, got " .. type(b ) .. ")", 2 ) end
 
           palcol[1], palcol[2], palcol[3] = r, g, b
+          palette_24[colour] = colours.rgb8(r, g, b)
       end
 
       dirty = true
@@ -254,30 +260,25 @@ local function buffer(original)
   function redirect.is_dirty() return dirty end
   function redirect.clear_dirty() dirty = false end
 
-  local function char(x)
-    if x <= 0 then return "00"
-    elseif x >= 255 then return "ff"
-    else return ("%02x"):format(x) end
-  end
-
   function redirect.serialise()
-    local palettes = {}
-    for i = 0, 15 do
-      local c = palette[2^i]
-      palettes[i * 3 + 1] = char(math.floor(c[1] * 255))
-      palettes[i * 3 + 2] = char(math.floor(c[2] * 255))
-      palettes[i * 3 + 3] = char(math.floor(c[3] * 255))
-    end
+    return stringify {
+      packet = 0x10,
 
-    return char(sizeX) .. char(sizeY) .. char(cursor_x) .. char(cursor_y)
-        .. (cursor_blink and "1" or "0") .. cur_text_colour .. cur_back_colour
-        .. table.concat(palettes)
-        .. table.concat(text)
-        .. table.concat(text_colour)
-        .. table.concat(back_colour)
+      width = sizeX, height = sizeY,
+      cursorX = cursor_x, cursorY = cursor_y, cursorB = cursor_blink,
+      curFore = cur_text_colour, curBack = cur_back_colour,
+
+      palette = palette_24,
+      text = text, fore = text_colour, back = back_colour
+    }
   end
 
+  -- Ensure we're in sync with the parent terminal
+  redirect.setCursorPos(1, 1)
+  redirect.setBackgroundColor(colours.black)
+  redirect.setTextColor(colours.white)
   redirect.clear()
+
   return redirect
 end
 

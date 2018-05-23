@@ -8,7 +8,7 @@ local function has_content(line)
         not (line:match("^%s*%-%-[^%[]") or line:match("^%s*%-%-$"))
 end
 
-for _, dep in pairs { "argparse", "framebuffer", "encode" } do
+for _, dep in pairs { "argparse", "framebuffer", "encode", "json" } do
     out:write(("package.preload[%q] = function(...)\n"):format(dep))
 
     for line in io.lines(dep .. ".lua") do

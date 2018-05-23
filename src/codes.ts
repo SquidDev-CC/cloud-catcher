@@ -11,4 +11,5 @@ export const enum WebsocketCodes {
   GoingAway = 1001,
   UnsupportedData = 1003,
   PolicyViolation = 1008,
+  TryAgainLater = 1013,
 }

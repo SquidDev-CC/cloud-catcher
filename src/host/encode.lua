@@ -4,7 +4,7 @@
 -- a limit of how much impact any of it actually makes. Kinda pointless though
 -- as this does 5Mb/s on my machine.
 local function fletcher_32(str)
-  local s1, s2, len, byte = 0, 0, #str, string.byte
+  local s1, s2, byte = 0, 0, string.byte
 
   if #str % 2 ~= 0 then str = str .. "\0" end
   for i = 1, #str, 2 do

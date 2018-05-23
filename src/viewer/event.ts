@@ -1,4 +1,4 @@
-import { PacketCode } from "../network";
+import { PacketCode, Packet } from "../network";
 
 export class BufferingEventQueue<T> {
   private readonly queue: T[] = [];
@@ -56,11 +56,9 @@ export class Semaphore {
 }
 
 export class PacketEvent {
-  public readonly code: PacketCode;
-  public readonly message: string;
+  public readonly packet: Packet;
 
-  public constructor(code: PacketCode, message: string) {
-    this.code = code;
-    this.message = message;
+  public constructor(packet: Packet) {
+    this.packet = packet;
   }
 }

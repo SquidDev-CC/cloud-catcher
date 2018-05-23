@@ -4,101 +4,104 @@
 -- Cache some globals
 local tonumber = tonumber
 local argparse = require "argparse"
+local framebuffer = require "framebuffer"
+local encode = require "encode"
+local json = require "json"
 
-local function is_help(cmd)
-  return cmd == "help" or cmd == "--help" or cmd == "-h" or cmd == "-?"
-end
-
-local cloud = _G.cloud_catcher
-if cloud then
+if _G.cloud_catcher then
   -- If the cloud_catcher API is available, then we provide an interface for it
-  -- instead of trying to nest things. That would be silly.
-  local id, file, forceWrite = nil, nil, false
+  -- instead of trying to run another session.
   local usage = ([[
-cloud: <subcommand> [args]
-Communicate with
-Subcommands:
-  edit <file> Open a file on the remote server.
-  token       Display the token for this
-              connection.
-]]):gsub("^%s+", ""):gsub("%s+$", "")
+  cloud: <subcommand> [args]
+  Communicate with the cloud-catcher session.
+  Subcommands:
+    edit <file> Open a file on the remote server.
+    token       Display the token for this
+                connection.
+  ]]):gsub("^%s+", ""):gsub("%s+$", ""):gsub("\n  ", "\n")
 
-    local subcommand = ...
-    if subcommand == "edit" or subcommand == "e" then
-      local arguments = argparse("cloud edit: Edit a file in the remote viewer")
-      arguments:add({ "file" }, { doc = "The file to upload" })
-      local result = arguments:parse(select(2, ...))
+  local subcommand = ...
+  if subcommand == "edit" or subcommand == "e" then
+    local arguments = argparse.create("cloud edit: Edit a file in the remote viewer")
+    arguments:add({ "file" }, { doc = "The file to upload", required = true })
+    local result = arguments:parse(select(2, ...))
 
-      local file = result.file
-      if is_help(file) then print(usage) return
-      elseif file == nil then printError(usage) error()
+    local file = result.file
+    local resolved = shell.resolve(file)
+
+    -- Create .lua files by default
+    if not fs.exists(resolved) and not resolved:find("%.") then
+      local extension = settings.get("edit.default_extension", "")
+      if extension ~= "" and type(extension) == "string" then
+          resolved = resolved .. "." .. extension
       end
-
-      local resolved = shell.resolve(file)
-
-      -- Create .lua files by default
-      if not fs.exists(resolved) and not resolved:find("%.") then
-        local extension = settings.get("edit.default_extension", "")
-        if extension ~= "" and type(extension) == "string" then
-            resolved = resolved .. "." .. extension
-        end
-      end
-
-      -- Error checking: we can't edit directories or readonly files which don't exist
-      if fs.isDir(resolved) then error(("%q is a directory"):format(file), 0) end
-      if fs.isReadOnly(resolved) then
-        if fs.exists(resolved) then
-          print(("%q is read only, will not be able to modify"):format(file))
-        else
-          error(("%q does not exist"):format(file), 0)
-        end
-      end
-
-      -- Let's actually edit the thing!
-      local ok, err = cloud.edit(resolved)
-      if not ok then error(err, 0) end
-      return
-    elseif subcommand == "token" or subcommand == "-t" then print(cloud.token()) return
-    elseif is_help(subcommand) then print(usage) return
-    elseif subcommand == nil then printError(usage) error()
-    else error(("%q is not a cloud catcher subcommand, run with --h for more info"):format(subcommand), 0)
     end
 
-    error("unreachable")
-    return
+    -- Error checking: we can't edit directories or readonly files which don't exist
+    if fs.isDir(resolved) then error(("%q is a directory"):format(file), 0) end
+    if fs.isReadOnly(resolved) then
+      if fs.exists(resolved) then
+        print(("%q is read only, will not be able to modify"):format(file))
+      else
+        error(("%q does not exist"):format(file), 0)
+      end
+    end
+
+    -- Let's actually edit the thing!
+    local ok, err = _G.cloud_catcher.edit(resolved)
+    if not ok then error(err, 0) end
+
+  elseif subcommand == "token" or subcommand == "t" then
+    print(_G.cloud_catcher.token())
+
+  elseif argparse.is_help(subcommand) then
+    print(usage)
+
+  elseif subcommand == nil then
+    printError(usage)
+    error()
+
+  else
+    error(("%q is not a cloud catcher subcommand, run with --h for more info"):format(subcommand), 0)
+  end
+
+  return
 end
 
 -- The actual cloud catcher client. Let's do some argument parsing!
 local current_path = shell.getRunningProgram()
 local current_name = fs.getName(current_path)
 
---- Here is a collection of libraries which we'll need.
-local framebuffer, encode = require("framebuffer"), require("encode")
-
-local arguments = argparse(current_name .. ": Interact with this computer remotely")
+local arguments = argparse.create(current_name .. ": Interact with this computer remotely")
 arguments:add({ "token" }, { doc = "The token to use when connecting" })
 arguments:add({ "--term", "-t" }, { value = true, doc = "Terminal dimensions or none to hide" })
+arguments:add({ "--dir",  "-d" }, { value = true, doc = "The directory to sync to. Defaults to the current one." })
 arguments:add({ "--http", "-H" }, { value = false, doc = "Use HTTP instead of HTTPs" })
-local result = arguments:parse(...)
+local args = arguments:parse(...)
 
-local token = result.token
+local token = args.token
 if #token ~= 32 or token:find("[^%a%d]") then
   error("Invalid token (must be 32 alpha-numeric characters)", 0)
 end
 
-local term_opts = result.term
-local previous_term = term.current()
-local parent_term = previous_term
-if term_opts then
-  if term_opts == "none" then
-    parent_term = framebuffer.empty(true, term.getSize())
-  elseif term_opts:find("^(%d+)x(%d+)$") then
-    local w, h = term_opts:match("^(%d+)x(%d+)$")
-    if w == 0 or h == 0 then error("Terminal cannot have 0 size", 0) end
+-- We keep track of what capabilities are enabled
+local capabilities = {}
 
-    parent_term = framebuffer.empty(true, tonumber(w), tonumber(h))
-  else
-    error("Unknown format for term: expected \"none\" or \"wxh\"", 0)
+--- Terminal support
+local term_opts = args.term
+local previous_term, parent_term = term.current()
+if term_opts == nil then
+  parent_term = previous_term
+else if term_opts == "none" then
+  parent_term = nil
+elseif term_opts == "hide" then
+  parent_term = framebuffer.empty(true, term.getSize())
+elseif term_opts:find("^(%d+)x(%d+)$") then
+  local w, h = term_opts:match("^(%d+)x(%d+)$")
+  if w == 0 or h == 0 then error("Terminal cannot have 0 size", 0) end
+  parent_term = framebuffer.empty(true, tonumber(w), tonumber(h))
+else
+    error("Unknown format for term: expected \"none\", \"hide\" or \"wxh\"", 0)
   end
 end
 
@@ -107,10 +110,14 @@ local w, h = parent_term.getSize()
 if w * h > 5000 then error("Terminal is too large to handle", 0) end
 
 -- Let's try to connect to the remote server
-local protocol = result.http and "ws" or "wss"
-local url = protocol .. "://localhost:8080/host?id=" .. token
+local url = ("%s://localhost:8080/connect?id=%s&capabilities=%s"):format(
+  args.http and "ws" or "wss", token, table.concat(capabilities, ","))
 local remote, err = http.websocket(url)
-if not remote then error("Cannot connect to cloud catcher server: " .. err, 0) end
+if not remote then error("Cannot connect to cloud-catcher server: " .. err, 0) end
+
+-- Keep track of what capabilities the remote server has. We do this up here
+-- so the API has information about it.
+local server_term, server_file_edit, server_file_host = false, false, false
 
 -- We're all ready to go, so let's inject our API and shell hooks
 do
@@ -118,6 +125,11 @@ do
   _G.cloud_catcher = {
     token = function() return token end,
     edit = function(file, force)
+      -- Check the remote client exists
+      if not server_file_edit then
+        return false, "There are no editors connected"
+      end
+
       -- We default to editing an empty string if the file doesn't exist
       local contents
       local handle = fs.open(file, "rb")
@@ -136,11 +148,16 @@ do
 
       local check = encode.fletcher_32(contents)
 
-      local flag = 0x02
-      if fs.isReadOnly(file) then flag = flag + 0x08 end
+      local flag = 0x04
+      if fs.isReadOnly(file) then flag = flag + 0x01 end
 
-      -- Send the File contents packet with an edit flag
-      remote.send(("30%02x%08x%s\0%s"):format(flag, check, file, contents))
+      remote.send(json.stringify {
+        packet = 0x22,
+        id = 0,
+        actions = {
+          { file = file, checksum = check, flags = flag, action = 0, contents = contents }
+        }
+      })
       return true
     end
   }
@@ -173,23 +190,26 @@ do
     end
   end)
 end
+-- Create our term buffer and program and start using it
+local co, buffer
+if parent_term ~= nil then
+  buffer = framebuffer.buffer(parent_term)
+  co = coroutine.create(shell.run)
+  term.redirect(buffer)
+end
 
--- Instantiate our sub-program
-local co = coroutine.create(shell.run)
+-- Oh here we are and here we are and here we go.
+-- I'm sorry all for the messy, bad code
+-- Here we gooooooooooooh,
+-- Rockin' all over the world
 
--- Create our term buffer and start using it
-local buffer = framebuffer.buffer(parent_term)
-term.redirect(buffer)
-term.clear()
-term.setCursorPos(1, 1)
-
--- Oh here we are and here we are and here we go
-local ok, res = coroutine.resume(co, "shell")
-
+local ok, res = true
+if co then ok, res = coroutine.resume(co, "shell") end
 local last_change, last_timer = os.clock(), nil
-while ok and coroutine.status(co) ~= "dead" do
-  if last_timer == nil and buffer.is_dirty() then
-    -- If the buffer is dirty and we've no redraw queued
+while ok and (not co or coroutine.status(co) ~= "dead") do
+  if server_term and last_timer == nil and buffer.is_dirty() then
+    -- If the buffer is dirty and we've no redraw queued and somebody
+    -- cares about us.
     local now = os.clock()
 
     if now - last_change < 0.04 then
@@ -198,95 +218,142 @@ while ok and coroutine.status(co) ~= "dead" do
       last_timer = os.startTimer(0)
     else
       -- Otherwise send the redraw immediately
+      remote.send(buffer.serialise())
       buffer.clear_dirty()
       last_change = os.clock()
-      remote.send("10" .. buffer.serialise())
     end
   end
 
   local event = table.pack(coroutine.yield())
 
   if event[1] == "timer" and event[2] == last_timer then
-    -- If we've got a redraw queued reset the timer and send our draw
+    -- If we've got a redraw queued then reset the timer and (if needed) push
+    -- send it to any viewers.
     last_timer = nil
+    if server_term then
+      if buffer.is_dirty() then remote.send(buffer.serialise()) end
+      buffer.clear_dirty()
+      last_change = os.clock()
+    end
 
-    buffer.clear_dirty()
-    last_change = os.clock()
-    remote.send("10" .. buffer.serialise())
   elseif event[1] == "websocket_closed" and event[2] == url then
     ok, res = false, "Connection lost"
     remote = nil
-  elseif event[1] == "websocket_message" and event[2] == url then
-    local message = event[3]
-    local code = tonumber(message:sub(1, 2), 16)
 
-    if code == 0x00 or code == 0x01 then
-      -- We shouldn't ever receive these packets, but let's handle them anyway
-      ok, res = false, "Connection lost"
-    elseif code == 0x02 then
-      -- Reply to ping events
-      remote.send("02")
-    elseif code == 0x20 then
-      -- Just forward paste events
-      os.queueEvent("paste", message:sub(3))
-    elseif code == 0x21 then
-      -- Key events: a kind of 0 or 1 signifies a key press, 2 is a release
-      local kind, code, char = message:match("^..(%x)(%x%x)(.*)$")
-      if kind then
-        kind, code = tonumber(kind, 16), tonumber(code, 16)
+  elseif event[1] == "websocket_message" and event[2] == url then
+    local packet = json.try_parse(event[3])
+    -- Extract the packet code so we can handle this in a more elegant way.
+    local code = packet and packet.packet
+    if type(code) ~= "number" then code = - 1 end
+
+    -- General connection packets
+    if code >= 0x00 and code < 0x10 then
+      if code == 0x00 then -- ConnectionUpdate
+        -- Reset our capabilities and then enable them again
+        server_term, server_file_edit, server_file_host = false, false, false
+        for _, cap in ipairs(packet.capabilities) do
+          if cap == "terminal:view" and buffer ~= nil then
+            -- If we have some viewer and they're listening then resend the
+            -- terminal, just in case.
+            server_term = true
+
+            remote.send(buffer.serialise())
+            buffer.clear_dirty()
+            last_change = os.clock()
+          elseif cap == "file:host" then
+            server_file_host = true
+          elseif cap == "file:edit" then
+            server_file_edit = true
+          end
+        end
+      elseif code == 0x02 then -- ConnectionPing
+        -- Reply to ping events
+        remote.send([[{"packet":2}]])
+      end
+
+    -- Packets requiring the terminal:viewer capability
+    elseif server_term and code >= 0x10 and code < 0x20 then
+      if code == 0x11 then -- TerminalPaste
+        -- Just forward paste events
+        os.queueEvent("paste", packet.contents)
+      elseif code == 0x12 then -- TerminalKey
+        -- Key events: a kind of 0 or 1 signifies a key press, 2 is a release
+        local kind, code, char = packet.kind, packet.code, packet.char
         if kind == 0 or kind == 1 then
           os.queueEvent("key", code, kind == 1)
           if char ~= "" then os.queueEvent("char", char) end
         elseif kind == 2 then os.queueEvent("key_up", code)
         end
-      end
-    elseif code == 0x22 then
-      -- Mouse events
-      local kind, code, x, y = message:match("^..(%x)(%x)(%x%x)(%x%x)$")
-      if kind then
-        kind, code, x, y = tonumber(kind, 16), tonumber(code, 16), tonumber(x, 16), tonumber(y, 16)
+      elseif code == 0x13 then -- TerminalMouse
+        local kind, code, x, y = packet.kind, packet.code, packet.x, packet.y
         if kind == 0 then os.queueEvent("mouse_click", code, x, y)
         elseif kind == 1 then os.queueEvent("mouse_up", code, x, y)
         elseif kind == 2 then os.queueEvent("mouse_drag", code, x, y)
         elseif kind == 3 then os.queueEvent("mouse_scroll", code - 1, x, y)
         end
       end
-    elseif code == 0x30 then
-      -- File edit events
-      local flags, checksum, name, contents = message:match("^..(%x%x)(%x%x%x%x%x%x%x%x)([^\0]+)\0(.*)$")
-      if flags then
-        flags, checksum = tonumber(flags, 16), tonumber(checksum, 16)
 
-        -- If the force flag is true, then we can always edit
-        local ok = bit32.band(flags, 0x1) == 1
+    -- Packets requring the file:host/file:editor capability
+    elseif code >= 0x20 and code < 0x30 then
+      if code == 0x22 then -- FileAction
+        local result = {}
+        for i, action in pairs(packet.actions) do
+          -- If the force flag is true, then we can always edit
+          local ok = bit32.band(action.flags, 0x1) == 1
 
-        -- Try to open the file. If it exists, determine the expected checksum
-        local expected_checksum = 0
-        local handle = fs.open(name, "rb")
-        if handle then
-          local contents = handle.readAll()
-          handle.close()
-          expected_checksum = encode.fletcher_32(contents)
+          -- Try to open the file. If it exists, determine the expected checksum
+          local expected_checksum = 0
+          local handle = fs.open(action.file, "rb")
+          if handle then
+            local contents = handle.readAll()
+            handle.close()
+            expected_checksum = encode.fletcher_32(contents)
+          end
+
+          -- We can edit the file if it doesn't already exist, or if the checksums match.
+          if not ok then
+            ok = expected_checksum == 0 or action.checksum == expected_checksum
+          end
+
+          if not ok then
+            -- Reject due to mismatched checksum
+            result[i] = { file = action.file, checksum = expected_checksum, result = 2 }
+          elseif action.action == 0x0 then -- Replace
+            local handle = fs.open(action.file, "wb")
+            -- Try to write, sending a failure if not possible.
+            if handle then
+              handle.write(action.contents)
+              handle.close()
+              result[i] = { file = action.file, checksum = action.checksum, result = 1 }
+            else
+              result[i] = { file = action.file, checksum = action.checksum, result = 3 }
+            end
+
+          elseif action.action == 0x1 then -- Patch
+            -- TODO
+
+          elseif action.action == 0x02 then -- Delete
+            local ok = fs.delete(action.file)
+            result[i] = { file = action.file, checksum = action.checksum, result = ok and 1 or 3 }
+          end
         end
 
-        -- We can edit the file if it doesn't already exist, or if the checksums match.
-        if not ok then
-          ok = expected_checksum == 0 or checksum == expected_checksum
-        end
-
-        -- Try to write our changes if we're all OK, otherwise abort.
-        local handle = ok and fs.open(name, "wb")
-        if handle then
-          handle.write(contents)
-          handle.close()
-          remote.send(("31%08x%s"):format(encode.fletcher_32(contents), name))
-        else
-          remote.send(("32%08x%s"):format(expected_checksum, name))
-        end
+        remote.send(json.stringify {
+          packet = 0x23,
+          id = packet.id,
+          files = result,
+        })
       end
     end
+
   elseif res == nil or event[1] == res or event[1] == "terminate" then
-    ok, res = coroutine.resume(co, table.unpack(event, 1, event.n))
+    -- If we're running a child program (we have a terminal) then forward our
+    -- events, otherwise skip for now.
+    if co then
+      ok, res = coroutine.resume(co, table.unpack(event, 1, event.n))
+    elseif event[1] == "terminate" then
+      ok, res = false, "Terminated"
+    end
   end
 end
 

@@ -1,5 +1,5 @@
 import { Component, h } from "preact";
-import { encodeByte, encodeNibble, encodePacket, PacketCode } from "../../network";
+import { PacketCode, encodePacket } from "../../network";
 import { Semaphore } from "../event";
 import { TerminalData } from "../terminal/data";
 import { convertKey, convertMouseButton, convertMouseButtons } from "../terminal/input";
@@ -200,8 +200,10 @@ export class Terminal extends Component<TerminalProps, {}> {
     // Abort if we"re empty
     if (!content) return;
 
-    this.props.connection.send(encodePacket(PacketCode.EventPaste) + content);
-
+    this.props.connection.send(encodePacket({
+      packet: PacketCode.TerminalPaste,
+      contents: content
+    }));
   }
 
   private onPaste = (event: ClipboardEvent) => {
@@ -230,9 +232,11 @@ export class Terminal extends Component<TerminalProps, {}> {
       case "mousedown": {
         const button = convertMouseButton(event.button);
         if (button) {
-          this.props.connection.send(encodePacket(PacketCode.EventMouse) +
-            encodeNibble(0) + encodeNibble(button) +
-            encodeByte(x) + encodeByte(y));
+          this.props.connection.send(encodePacket({
+            packet: PacketCode.TerminalMouse,
+            kind: 0,
+            button, x, y
+          }));
           this.lastX = x;
           this.lastY = y;
         }
@@ -241,9 +245,11 @@ export class Terminal extends Component<TerminalProps, {}> {
       case "mouseup": {
         const button = convertMouseButton(event.button);
         if (button) {
-          this.props.connection.send(encodePacket(PacketCode.EventMouse) +
-            encodeNibble(1) + encodeNibble(button) +
-            encodeByte(x) + encodeByte(y));
+          this.props.connection.send(encodePacket({
+            packet: PacketCode.TerminalMouse,
+            kind: 1,
+            button, x, y
+          }));
           this.lastX = x;
           this.lastY = y;
         }
@@ -251,9 +257,11 @@ export class Terminal extends Component<TerminalProps, {}> {
       case "mousemove": {
         const button = convertMouseButtons(event.buttons);
         if (button && (x !== this.lastX || y !== this.lastY)) {
-          this.props.connection.send(encodePacket(PacketCode.EventMouse) +
-            encodeNibble(2) + encodeNibble(button) +
-            encodeByte(x) + encodeByte(y));
+          this.props.connection.send(encodePacket({
+            packet: PacketCode.TerminalMouse,
+            kind: 2,
+            button, x, y
+          }));
           this.lastX = x;
           this.lastY = y;
         }
@@ -277,9 +285,12 @@ export class Terminal extends Component<TerminalProps, {}> {
       1, this.props.terminal.sizeY);
 
     if (event.deltaY !== 0) {
-      this.props.connection.send(encodePacket(PacketCode.EventMouse) +
-        encodeNibble(3) + encodeNibble(Math.sign(event.deltaY) + 1) +
-        encodeByte(x) + encodeByte(y));
+      this.props.connection.send(encodePacket({
+        packet: PacketCode.TerminalMouse,
+        kind: 3,
+        button: Math.sign(event.deltaY) + 1,
+        x, y,
+      }));
     }
   }
 
@@ -305,11 +316,18 @@ export class Terminal extends Component<TerminalProps, {}> {
     if (event.type === "keydown") {
       const char = !event.altKey && !event.ctrlKey && event.key.length === 1 ? event.key : "";
 
-      this.props.connection.send(encodePacket(PacketCode.EventKey) +
-        encodeNibble(event.repeat ? 0 : 1) + encodeByte(code) + char);
+      this.props.connection.send(encodePacket({
+        packet: PacketCode.TerminalKey,
+        kind: event.repeat ? 0 : 1,
+        code, char
+      }));
     } else if (event.type === "keyup") {
-      this.props.connection.send(encodePacket(PacketCode.EventKey) +
-        encodeNibble(2) + encodeByte(code));
+      this.props.connection.send(encodePacket({
+        packet: PacketCode.TerminalKey,
+        kind: 2,
+        code,
+        char: "",
+      }));
     }
   }
 

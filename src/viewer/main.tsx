@@ -1,6 +1,6 @@
 import { Component, h } from "preact";
 import { WebsocketCodes } from "../codes";
-import { PacketCode, encodePacket } from "../network";
+import { Capability, PacketCode, decodePacket, encodePacket } from "../network";
 import { Token } from "../token";
 import { Computer } from "./computer";
 import { BufferingEventQueue, PacketEvent } from "./event";
@@ -16,6 +16,7 @@ type MainState = {
   events: BufferingEventQueue<PacketEvent>,
   settings: Settings,
 
+  hadConnected: boolean,
   currentVDom: (state: MainState) => JSX.Element,
   dialogue?: (state: MainState) => JSX.Element,
 };
@@ -28,7 +29,8 @@ export class Main extends Component<MainProps, MainState> {
   public componentWillMount() {
     const { token } = this.props;
     const protocol = window.location.protocol === "http:" ? "ws:" : "wss:";
-    const socket = new WebSocket(`${protocol}//${window.location.host}/view?id=${token}`);
+    const caps = [Capability.TerminalView, Capability.FileEdit].join(",");
+    const socket = new WebSocket(`${protocol}//${window.location.host}/connect?id=${token}&capabilities=${caps}`);
     const events = new BufferingEventQueue<PacketEvent>();
 
     const settings: Settings = {
@@ -58,6 +60,7 @@ export class Main extends Component<MainProps, MainState> {
       events,
       settings,
 
+      hadConnected: false,
       currentVDom: () => <TokenDisplay token={token} />,
     };
 
@@ -80,30 +83,50 @@ export class Main extends Component<MainProps, MainState> {
       const data = message.data;
       if (typeof data !== "string") return;
 
-      const code = parseInt(data.substr(0, 2), 16);
-      switch (code) {
+      const packet = decodePacket(data);
+      if (!packet) {
+        console.error("Invalid packet received");
+        return;
+      }
+
+      switch (packet.packet) {
+        case PacketCode.ConnectionUpdate: {
+          /* If we've got some client which looks vaguely interesting, switch to
+             the computer display.  Otherwise, either show the token screen if
+             we've never established a connection, or the lost connection if we
+             have. */
+          const capabilities = new Set(packet.capabilities);
+          if (capabilities.has(Capability.TerminalHost) || capabilities.has(Capability.FileHost)) {
+            this.setState({
+              currentVDom: this.computerVDom,
+              hadConnected: true,
+            });
+          } else if (this.state.hadConnected) {
+            this.setState({ currentVDom: () => <LostConnection token={token} /> });
+          } else {
+            this.setState({ currentVDom: () => <TokenDisplay token={token} /> });
+          }
+          break;
+        }
+
         case PacketCode.ConnectionAbuse:
-        case PacketCode.ConnectionLost:
-          this.setState({ currentVDom: () => <LostConnection token={token} /> });
+          // We currently do nothing, might be a good idea to change that.
           break;
 
         case PacketCode.ConnectionPing:
-          socket.send(encodePacket(PacketCode.ConnectionPing));
+          socket.send(encodePacket({ packet: PacketCode.ConnectionPing }));
           break;
 
         case PacketCode.TerminalContents:
-        case PacketCode.FileContents:
-          events.enqueue(new PacketEvent(code, data.substr(2)));
-          this.setState({ currentVDom: this.computerVDom });
-          break;
-
-        case PacketCode.FileAccept:
-        case PacketCode.FileReject:
-          events.offer(new PacketEvent(code, data.substr(2)));
+        case PacketCode.FileAction:
+        case PacketCode.FileConsume:
+        case PacketCode.FileListing:
+        case PacketCode.FileRequest:
+          events.enqueue(new PacketEvent(packet));
           break;
 
         default:
-          console.error("Unknown packet " + code);
+          console.error("Unknown packet " + packet.packet);
           break;
       }
     });
