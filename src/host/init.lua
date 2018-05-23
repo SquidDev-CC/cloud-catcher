@@ -105,9 +105,16 @@ else
   end
 end
 
--- Enforce some bounds.
-local w, h = parent_term.getSize()
-if w * h > 5000 then error("Terminal is too large to handle", 0) end
+if parent_term then
+  table.insert(capabilities, "terminal:host")
+  local w, h = parent_term.getSize()
+  if w * h > 5000 then error("Terminal is too large to handle", 0) end
+end
+
+-- Handle file system syncing
+local sync_dir = shell.resolve(args.dir or "./")
+if not fs.isDir(sync_dir) then error(("%q is not a directory"):format(sync_dir), 0) end
+table.insert(capabilities, "file:host")
 
 -- Let's try to connect to the remote server
 local url = ("%s://localhost:8080/connect?id=%s&capabilities=%s"):format(
@@ -319,6 +326,7 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
             -- Reject due to mismatched checksum
             result[i] = { file = action.file, checksum = expected_checksum, result = 2 }
           elseif action.action == 0x0 then -- Replace
+
             local handle = fs.open(action.file, "wb")
             -- Try to write, sending a failure if not possible.
             if handle then
