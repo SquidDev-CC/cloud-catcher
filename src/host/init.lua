@@ -325,20 +325,52 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
           if not ok then
             -- Reject due to mismatched checksum
             result[i] = { file = action.file, checksum = expected_checksum, result = 2 }
-          elseif action.action == 0x0 then -- Replace
 
-            local handle = fs.open(action.file, "wb")
+          elseif action.action == 0x0 then -- Replace
+            handle = fs.open(action.file, "wb")
             -- Try to write, sending a failure if not possible.
             if handle then
               handle.write(action.contents)
               handle.close()
-              result[i] = { file = action.file, checksum = action.checksum, result = 1 }
+              result[i] = { file = action.file, checksum = encode.fletcher_32(action.contents), result = 1 }
             else
-              result[i] = { file = action.file, checksum = action.checksum, result = 3 }
+              result[i] = { file = action.file, checksum = expected_checksum, result = 3 }
             end
 
           elseif action.action == 0x1 then -- Patch
-            -- TODO
+            handle = fs.open(action.file, "rb")
+            if handle then
+              local out, n = {}, 0
+              for _, delta in pairs(action.delta) do
+                if delta.kind == 0 then -- Same
+                  n = n + 1
+                  out[n] = handle.read(delta.length)
+                elseif delta.kind == 1 then -- Added
+                  n = n + 1
+                  out[n] = delta.contents
+                elseif delta.kind == 2 then -- Removed
+                  handle.read(delta.length)
+                end
+              end
+              handle.close()
+
+              handle = fs.open(action.file, "wb")
+              if handle then
+                local contents = table.concat(out)
+                handle.write(contents)
+                handle.close()
+
+                -- File written OK
+                result[i] = { file = action.file, checksum = encode.fletcher_32(contents), result = 1 }
+              else
+                -- File could not be written
+                result[i] = { file = action.file, checksum = expected_checksum, result = 3 }
+              end
+            else
+              -- File does not exist, obviously patching is impossible
+              result[i] = { file = action.file, checksum = expected_checksum, result = 2 }
+            end
+
 
           elseif action.action == 0x02 then -- Delete
             local ok = fs.delete(action.file)

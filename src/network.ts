@@ -1,3 +1,5 @@
+import { Fragment } from "./diff";
+
 /**
  * This represents the capabilities a client has. The server can be thought of a
  * monolithic entity which has all the capabilities its clients provide.
@@ -248,11 +250,10 @@ export const enum FileAction {
   Delete = 0x2,
 }
 
-export type FileActionEntry = FileEntry & {
-  action: FileAction,
-  flags: FileActionFlags,
-  contents: string,
-};
+export type FileActionEntry = FileEntry & { flags: FileActionFlags } &
+  ({ action: FileAction.Delete }
+    | { action: FileAction.Patch, delta: Fragment[] }
+    | { action: FileAction.Replace, contents: string });
 
 /**
  * Sends one or more files from one client to another.

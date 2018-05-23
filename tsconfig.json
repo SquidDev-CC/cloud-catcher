@@ -9,6 +9,9 @@
     "newLine": "LF",
     "outDir": "build",
     "baseUrl": ".",
+    "paths": {
+      "diff/*": [ "./node_modules/@types/diff/index.d.ts" ]
+    },
 
     "forceConsistentCasingInFileNames":true,
     "strict": true,

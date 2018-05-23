@@ -8,6 +8,7 @@ import { Terminal } from "../terminal/component";
 import { TerminalData } from "../terminal/data";
 import Editor, * as editor from "./editor";
 import { Notification, NotificationBody, NotificationKind, Notifications } from "./notifications";
+import { computeDiff } from "../../diff";
 
 type FileInfo = {
   name: string,
@@ -15,6 +16,9 @@ type FileInfo = {
   readOnly: boolean,
 
   remoteChecksum: number,
+  remoteContents: string,
+
+  updateContents?: string,
   updateChecksum?: number,
   updateMark?: number,
 
@@ -146,6 +150,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       // for now as it doesn't change how things are displayed. I'm sorry.
       file.updateMark = file.model.text.getAlternativeVersionId();
       file.updateChecksum = fletcher32(contents);
+      file.updateContents = contents;
 
       this.props.connection.send(encodePacket({
         packet: PacketCode.FileAction,
@@ -154,10 +159,9 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         actions: [{
           file: file.name,
           checksum: file.remoteChecksum,
-          // TODO: Investigate patching
-          action: FileAction.Replace,
+          action: FileAction.Patch,
           flags: 0,
-          contents,
+          delta: computeDiff(file.remoteContents, contents),
         }],
       }));
     };
@@ -199,8 +203,9 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       let { files, activeFile } = this.state;
       files = [...files];
 
-      let results = packet.actions.map(({ file: name, action, flags, checksum, contents }) => {
-        switch (action) {
+      let results = packet.actions.map(actionEntry => {
+        const { file: name, flags, checksum } = actionEntry;
+        switch (actionEntry.action) {
           case FileAction.Delete:
             files = files.filter(x => x.name !== name);
             if (activeFile === name) activeFile = null;
@@ -210,7 +215,9 @@ export class Computer extends Component<ComputerProps, ComputerState> {
             let file = files.find(x => x.name === name);
             if (flags & FileActionFlags.Open) activeFile = name;
             if (!file) {
-              const model = editor.createModel(contents, "luax");
+              // We're seeing the file for the first time, so create a model and
+              // everything.
+              const model = editor.createModel(actionEntry.contents, "luax");
 
               // Setup some event listeners for this model
               model.text.onDidChangeContent(() => {
@@ -225,7 +232,8 @@ export class Computer extends Component<ComputerProps, ComputerState> {
                 name, model,
                 readOnly: (flags & FileActionFlags.ReadOnly) !== 0,
 
-                remoteChecksum: fletcher32(contents),
+                remoteContents: actionEntry.contents,
+                remoteChecksum: fletcher32(actionEntry.contents),
 
                 modified: false,
                 savedVersionId: model.text.getAlternativeVersionId(),
@@ -234,11 +242,20 @@ export class Computer extends Component<ComputerProps, ComputerState> {
               files.push(file);
 
               return { file: name, result: true };
+
             } else if (file.remoteChecksum === checksum || (flags & FileActionFlags.Force)) {
-              file.model.text.setValue(contents);
+              // The remote checksum matches our current one, so update our model.
+              file.model.text.setValue(actionEntry.contents);
+              file.remoteContents = actionEntry.contents;
               file.remoteChecksum = checksum;
+
               return { file: name, result: true };
             } else {
+              // We couldn't update, so just inform the user about this problem.
+              // TODO: Keep track of both the "good" version and the last version we got?
+              this.pushFileNotification(file, NotificationKind.Warn, "update",
+                <span><code>{file.name}</code> has been changed on the remote.</span>);
+
               return { file: name, result: false };
             }
           }
@@ -258,8 +275,6 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         const { file: name, result, checksum } = info;
         const file = this.state.files.find(x => x.name === name);
         if (file) {
-          file.remoteChecksum = checksum;
-
           switch (result) {
             case FileConsume.OK:
               if (file.updateChecksum === checksum) {
@@ -267,14 +282,18 @@ export class Computer extends Component<ComputerProps, ComputerState> {
                   savedVersionId: file.updateMark!,
                   modified: file.model.text.getAlternativeVersionId() !== file.updateMark,
 
+                  remoteChecksum: file.updateChecksum,
+                  remoteContents: file.updateContents!,
+
                   updateMark: undefined,
                   updateChecksum: undefined,
+                  updateContents: undefined,
                 });
 
                 this.removeFileNotification(file, "update");
               } else {
                 this.pushFileNotification(file, NotificationKind.Warn, "update",
-                  <span><code>{file.name}</code> has been changed, you may want to close and reopen to update it.</span>);
+                  <span><code>{file.name}</code> has been changed on the remote.</span>);
               }
               break;
 
@@ -284,6 +303,14 @@ export class Computer extends Component<ComputerProps, ComputerState> {
                   <span><code>{file.name}</code> could not be saved as it was changed on the remote client.</span>);
               }
               break;
+
+            case FileConsume.Failure:
+              if (file.updateChecksum) {
+                this.pushFileNotification(file, NotificationKind.Error, "update",
+                  <span><code>{file.name}</code> failed to save, is the file read only?</span>);
+              }
+              break;
+
           }
         }
       }
