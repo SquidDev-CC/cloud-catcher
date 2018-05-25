@@ -190,8 +190,8 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       // TODO: Palettes
       terminal.resize(packet.width, packet.height);
 
-      terminal.cursorX = packet.cursorX;
-      terminal.cursorY = packet.cursorY;
+      terminal.cursorX = packet.cursorX - 1;
+      terminal.cursorY = packet.cursorY - 1;
       terminal.cursorBlink = packet.cursorBlink;
 
       terminal.text = packet.text;
@@ -203,7 +203,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       let { files, activeFile } = this.state;
       files = [...files];
 
-      let results = packet.actions.map(actionEntry => {
+      const results = packet.actions.map(actionEntry => {
         const { file: name, flags, checksum } = actionEntry;
         switch (actionEntry.action) {
           case FileAction.Delete:

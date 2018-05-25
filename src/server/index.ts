@@ -207,9 +207,7 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
             for (const client of connection.terminalViewers) client.send(message, sendCallback);
             break;
 
-          case PacketCode.TerminalKey:
-          case PacketCode.TerminalPaste:
-          case PacketCode.TerminalMouse:
+          case PacketCode.TerminalEvents:
             if (connection.terminalHost !== null) connection.terminalHost.send(message, sendCallback);
             break;
 

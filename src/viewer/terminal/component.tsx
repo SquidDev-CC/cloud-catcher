@@ -201,8 +201,8 @@ export class Terminal extends Component<TerminalProps, {}> {
     if (!content) return;
 
     this.props.connection.send(encodePacket({
-      packet: PacketCode.TerminalPaste,
-      contents: content
+      packet: PacketCode.TerminalEvents,
+      events: [{ name: "paste", args: [content] }]
     }));
   }
 
@@ -233,9 +233,8 @@ export class Terminal extends Component<TerminalProps, {}> {
         const button = convertMouseButton(event.button);
         if (button) {
           this.props.connection.send(encodePacket({
-            packet: PacketCode.TerminalMouse,
-            kind: 0,
-            button, x, y
+            packet: PacketCode.TerminalEvents,
+            events: [{ name: "mouse_click", args: [button, x, y] }],
           }));
           this.lastX = x;
           this.lastY = y;
@@ -246,9 +245,8 @@ export class Terminal extends Component<TerminalProps, {}> {
         const button = convertMouseButton(event.button);
         if (button) {
           this.props.connection.send(encodePacket({
-            packet: PacketCode.TerminalMouse,
-            kind: 1,
-            button, x, y
+            packet: PacketCode.TerminalEvents,
+            events: [{ name: "mouse_up", args: [button, x, y] }],
           }));
           this.lastX = x;
           this.lastY = y;
@@ -258,9 +256,8 @@ export class Terminal extends Component<TerminalProps, {}> {
         const button = convertMouseButtons(event.buttons);
         if (button && (x !== this.lastX || y !== this.lastY)) {
           this.props.connection.send(encodePacket({
-            packet: PacketCode.TerminalMouse,
-            kind: 2,
-            button, x, y
+            packet: PacketCode.TerminalEvents,
+            events: [{ name: "mouse_drag", args: [button, x, y] }],
           }));
           this.lastX = x;
           this.lastY = y;
@@ -286,10 +283,8 @@ export class Terminal extends Component<TerminalProps, {}> {
 
     if (event.deltaY !== 0) {
       this.props.connection.send(encodePacket({
-        packet: PacketCode.TerminalMouse,
-        kind: 3,
-        button: Math.sign(event.deltaY) + 1,
-        x, y,
+        packet: PacketCode.TerminalEvents,
+        events: [{ name: "mouse_scroll", args: [Math.sign(event.deltaY) + 1, x, y] }],
       }));
     }
   }
@@ -314,19 +309,19 @@ export class Terminal extends Component<TerminalProps, {}> {
     }
 
     if (event.type === "keydown") {
-      const char = !event.altKey && !event.ctrlKey && event.key.length === 1 ? event.key : "";
+      const events: Array<{ name: string, args: any[] }> = [{ name: "key", args: [code, event.repeat] }];
+      if (!event.altKey && !event.ctrlKey && event.key.length === 1) {
+        events.push({ name: "char", args: [event.key] });
+      }
 
       this.props.connection.send(encodePacket({
-        packet: PacketCode.TerminalKey,
-        kind: event.repeat ? 0 : 1,
-        code, char
+        packet: PacketCode.TerminalEvents,
+        events,
       }));
     } else if (event.type === "keyup") {
       this.props.connection.send(encodePacket({
-        packet: PacketCode.TerminalKey,
-        kind: 2,
-        code,
-        char: "",
+        packet: PacketCode.TerminalEvents,
+        events: [{ name: "key_up", args: [code] }],
       }));
     }
   }

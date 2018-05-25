@@ -55,9 +55,7 @@ export const enum PacketCode {
   ConnectionPing = 0x02,
 
   TerminalContents = 0x10,
-  TerminalPaste = 0x11,
-  TerminalKey = 0x12,
-  TerminalMouse = 0x13,
+  TerminalEvents = 0x11,
 
   FileListing = 0x20,
   FileRequest = 0x21,
@@ -70,9 +68,7 @@ export type Packet
   | PacketConnectionAbuse
   | PacketConnectionPing
   | PacketTerminalContents
-  | PacketTerminalPaste
-  | PacketTerminalKey
-  | PacketTerminalMouse
+  | PacketTerminalEvents
   | PacketFileListing
   | PacketFileReqeust
   | PacketFileAction
@@ -136,38 +132,12 @@ export type PacketTerminalContents = {
 };
 
 /**
- * Send a paste event to the terminal host
+ * Send one or more events to the terminal host
  */
-export type PacketTerminalPaste = {
-  packet: PacketCode.TerminalPaste,
+export type PacketTerminalEvents = {
+  packet: PacketCode.TerminalEvents,
 
-  contents: string,
-};
-
-/**
- * Send a paste event to the terminal host
- * Send a key event to the host, including the code, and whether it was
- * a press, repeat or release.  May also include the character code, or
- * 0 if not needed.
- */
-export type PacketTerminalKey = {
-  packet: PacketCode.TerminalKey,
-
-  /** 0 = press, 1 = repeat, 2 = release */
-  kind: 0 | 1 | 2, // TODO: Enum.
-  code: number,
-  /** Either a single character or the empty string */
-  char: string,
-};
-
-export type PacketTerminalMouse = {
-  packet: PacketCode.TerminalMouse;
-
-  /** 0 = press, 1 = release, 2 = drag, 3 = scroll */
-  kind: 0 | 1 | 2 | 3, // TODO: Enum
-  /** The button which was pressed or the scroll direction */
-  button: number,
-  x: number, y: number,
+  events: Array<{ name: string, args: any[] }>,
 };
 
 export type FileEntry = {
@@ -304,9 +274,7 @@ export const allowedFrom = (code: PacketCode, capabilities: Set<Capability>) => 
     case PacketCode.ConnectionAbuse: return false;
 
     case PacketCode.TerminalContents: return capabilities.has(Capability.TerminalHost);
-    case PacketCode.TerminalKey:
-    case PacketCode.TerminalMouse:
-    case PacketCode.TerminalPaste:
+    case PacketCode.TerminalEvents:
       return capabilities.has(Capability.TerminalView);
 
     case PacketCode.FileAction:

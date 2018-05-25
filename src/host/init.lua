@@ -280,23 +280,10 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
 
     -- Packets requiring the terminal:viewer capability
     elseif server_term and code >= 0x10 and code < 0x20 then
-      if code == 0x11 then -- TerminalPaste
-        -- Just forward paste events
-        os.queueEvent("paste", packet.contents)
-      elseif code == 0x12 then -- TerminalKey
-        -- Key events: a kind of 0 or 1 signifies a key press, 2 is a release
-        local kind, code, char = packet.kind, packet.code, packet.char
-        if kind == 0 or kind == 1 then
-          os.queueEvent("key", code, kind == 1)
-          if char ~= "" then os.queueEvent("char", char) end
-        elseif kind == 2 then os.queueEvent("key_up", code)
-        end
-      elseif code == 0x13 then -- TerminalMouse
-        local kind, code, x, y = packet.kind, packet.code, packet.x, packet.y
-        if kind == 0 then os.queueEvent("mouse_click", code, x, y)
-        elseif kind == 1 then os.queueEvent("mouse_up", code, x, y)
-        elseif kind == 2 then os.queueEvent("mouse_drag", code, x, y)
-        elseif kind == 3 then os.queueEvent("mouse_scroll", code - 1, x, y)
+      if code == 0x11 then -- TerminalEvents
+        -- Just forward events
+        for _, event in ipairs(packet.events) do
+          os.queueEvent(event.name, table.unpack(event.args))
         end
       end
 
