@@ -265,7 +265,7 @@ local function buffer(original)
       packet = 0x10,
 
       width = sizeX, height = sizeY,
-      cursorX = cursor_x, cursorY = cursor_y, cursorB = cursor_blink,
+      cursorX = cursor_x, cursorY = cursor_y, cursorBlink = cursor_blink,
       curFore = cur_text_colour, curBack = cur_back_colour,
 
       palette = palette_24,

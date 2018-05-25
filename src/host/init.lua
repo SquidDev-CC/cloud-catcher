@@ -213,6 +213,7 @@ end
 local ok, res = true
 if co then ok, res = coroutine.resume(co, "shell") end
 local last_change, last_timer = os.clock(), nil
+local pending_events, pending_n = {}, 0
 while ok and (not co or coroutine.status(co) ~= "dead") do
   if server_term and last_timer == nil and buffer.is_dirty() then
     -- If the buffer is dirty and we've no redraw queued and somebody
@@ -231,7 +232,15 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
     end
   end
 
-  local event = table.pack(coroutine.yield())
+  -- We maintain a buffer of "fake" events in order to allow us to operate
+  -- within multishell
+  local event
+  if pending_n > 1 then
+    event = table.remove(pending_events, 1)
+    pending_n = pending_n - 1
+  else
+    event = table.pack(coroutine.yield())
+  end
 
   if event[1] == "timer" and event[2] == last_timer then
     -- If we've got a redraw queued then reset the timer and (if needed) push
@@ -283,7 +292,8 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
       if code == 0x11 then -- TerminalEvents
         -- Just forward events
         for _, event in ipairs(packet.events) do
-          os.queueEvent(event.name, table.unpack(event.args))
+          pending_n = pending_n + 1
+          pending_events[pending_n] = table.pack(event.name, table.unpack(event.args))
         end
       end
 
