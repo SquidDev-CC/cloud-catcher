@@ -20,10 +20,15 @@ for _, dep in pairs { "argparse", "framebuffer", "encode", "json" } do
     out:write("end\n")
 end
 
+local cloudCatcherServerURL = "://cloud-catcher.squiddev.cc"
+if type(os) == "table" and type(os.getenv) == "function" then
+  local envURL = os.getenv("cloudCatcherServerURL")
+  cloudCatcherServerURL = envURL or cloudCatcherServerURL
+end
 
 for line in io.lines("init.lua") do
   if has_content(line) then
-    out:write(line:gsub("://localhost:8080", "://cloud-catcher.squiddev.cc") .. "\n")
+    out:write(line:gsub("://localhost:8080", cloudCatcherServerURL) .. "\n")
   end
 end
 
