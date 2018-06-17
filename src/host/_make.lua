@@ -1,5 +1,6 @@
 #!/usr/bin/env lua
-local out, err = io.open(..., "w")
+local file, server = ...
+local out, err = io.open(file, "w")
 if not out then error(err, 0) end
 
 local function has_content(line)
@@ -20,10 +21,9 @@ for _, dep in pairs { "argparse", "framebuffer", "encode", "json" } do
     out:write("end\n")
 end
 
-
 for line in io.lines("init.lua") do
   if has_content(line) then
-    out:write(line:gsub("://localhost:8080", "://cloud-catcher.squiddev.cc") .. "\n")
+    out:write(line:gsub("localhost:8080", server) .. "\n")
   end
 end
 

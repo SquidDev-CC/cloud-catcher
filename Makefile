@@ -4,12 +4,14 @@ TS := $(shell find src -type f \( -name '*.ts' -or -name '*.tsx' \) )
 LUA := $(shell find src -type f -name '*.lua')
 BUILD_TS := $(TS:src/%=build/%)
 
+SERVER ?= "cloud-catcher.squiddev.cc"
+
 .PHONEY: lint serve all clean
 
 all: public/assets/main.js build
 
 clean:
-	rm -rf build dist
+	rm -rf build dist public/cloud.lua public/assets/main.js
 
 dist: package.json package-lock.json build public/index.html public/404.html public/assets/main.css public/assets/main.js public/assets/monaco-worker.js public/assets/termFont.png public/cloud.lua
 	rm -rf dist
@@ -21,7 +23,6 @@ dist: package.json package-lock.json build public/index.html public/404.html pub
 
 	mkdir -p dist/public
 	cp public/index.html dist/public
-	cp public/404.html dist/public
 	cp public/cloud.lua dist/public
 
 	mkdir -p dist/public/assets
@@ -42,7 +43,7 @@ public/assets/main.js: build
 
 public/cloud.lua: $(LUA)
 	cd src/host; \
-	lua _make.lua ../../public/cloud.lua
+	lua _make.lua ../../public/cloud.lua "$(SERVER)"
 
 serve: build public/cloud.lua
 	tsc --project tsconfig.json --watch & \
