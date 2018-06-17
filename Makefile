@@ -38,8 +38,8 @@ public/assets/main.js: build
 
 public/cloud.lua: $(LUA)
 	cd src/host; \
-	if [ -z "${cloudCatcherServerURL+x}" ]; then cloudCatcherServerURL="://cloud-catcher.squiddev.cc"; fi # see https://stackoverflow.com/a/13864829
-	lua _make.lua ../../public/cloud.lua "$(cloudCatcherServerURL)"
+	defaultServerURL="://cloud-catcher.squiddev.cc"; \
+	lua _make.lua ../../public/cloud.lua "${cloudCatcherServerURL:-$defaultServerURL}"
 
 serve: build
 	tsc --project tsconfig.json --watch & \
