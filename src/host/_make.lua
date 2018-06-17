@@ -1,5 +1,5 @@
 #!/usr/bin/env lua
-local file, serverURL = ...
+local file, server = ...
 local out, err = io.open(file, "w")
 if not out then error(err, 0) end
 
@@ -23,7 +23,7 @@ end
 
 for line in io.lines("init.lua") do
   if has_content(line) then
-    out:write(line:gsub("://localhost:8080", serverURL) .. "\n")
+    out:write(line:gsub("localhost:8080", server) .. "\n")
   end
 end
 
