@@ -1,7 +1,6 @@
 #!/usr/bin/env lua
-local pack = pack or (table and table.pack)
-local args = pack(...)
-local out, err = io.open(args[1], "w")
+local file, serverURL = ...
+local out, err = io.open(file, "w")
 if not out then error(err, 0) end
 
 local function has_content(line)
@@ -22,11 +21,9 @@ for _, dep in pairs { "argparse", "framebuffer", "encode", "json" } do
     out:write("end\n")
 end
 
-local cloudCatcherServerURL = args[2] or "://localhost:8080" -- If this variable is not set by the arg then we assume that there is some local testing
-
 for line in io.lines("init.lua") do
   if has_content(line) then
-    out:write(line:gsub("://localhost:8080", cloudCatcherServerURL) .. "\n")
+    out:write(line:gsub("://localhost:8080", serverURL) .. "\n")
   end
 end
 
