@@ -4,6 +4,8 @@ TS := $(shell find src -type f \( -name '*.ts' -or -name '*.tsx' \) )
 LUA := $(shell find src -type f -name '*.lua')
 BUILD_TS := $(TS:src/%=build/%)
 
+defaultServerURL="://cloud-catcher.squiddev.cc"
+
 .PHONEY: lint serve all clean
 
 all: public/assets/main.js build
@@ -38,7 +40,6 @@ public/assets/main.js: build
 
 public/cloud.lua: $(LUA)
 	cd src/host; \
-	defaultServerURL="://cloud-catcher.squiddev.cc"; \
 	lua _make.lua ../../public/cloud.lua "${cloudCatcherServerURL:-$defaultServerURL}"
 
 serve: build
