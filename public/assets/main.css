@@ -10,7 +10,6 @@ html, body, .container {
   margin: 0px;
   padding: 0px;
   border: none;
-  overflow: hidden; /* An ugly hack, but it works */
 }
 
 pre, code {
@@ -26,13 +25,18 @@ pre { padding: 10px; }
   colour: #aaa;
 }
 
-.info-view {
+.info-container {
   position: relative;
   top: 80px;
   margin: 0px auto;
   max-width: 800px;
-  padding: 0 10px;
+}
 
+.info-view, .info-description {
+  padding: 5px 10px;
+}
+
+.info-view {
   font-size: 1.5em;
   line-height: 1.3em;
 
@@ -181,7 +185,7 @@ pre { padding: 10px; }
 .notification-ok .notification-kind span:before { content: "Success"; }
 
 .settings-cog {
-    position: absolute;
+    position: fixed;
     bottom: 5px;
     left: 5px;
     opacity: 0.6;
