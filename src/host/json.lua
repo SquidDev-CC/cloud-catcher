@@ -9,16 +9,36 @@ local function skip_delim(str, pos, delim, err_if_missing)
   return pos + 1, true
 end
 
-local function parse_str_val(str, pos, val)
-  val = val or ''
+-- A table of JSON->Lua escape characters
+local esc_map = { b = '\b', f = '\f', n = '\n', r = '\r', t = '\t' }
+
+local function parse_str_val(str, pos)
+  local out, n = {}, 0
   if pos > #str then error("Malformed JSON (in string)") end
-  local c = str:sub(pos, pos)
-  if c == '"'  then return val, pos + 1 end
-  if c ~= '\\' then return parse_str_val(str, pos + 1, val .. c) end
-  local esc_map = {b = '\b', f = '\f', n = '\n', r = '\r', t = '\t'}
-  local nextc = str:sub(pos + 1, pos + 1)
-  if not nextc then error("Malformed JSON (in string)") end
-  return parse_str_val(str, pos + 2, val .. (esc_map[nextc] or nextc))
+
+  while true do
+    local c = str:sub(pos, pos)
+    if c == '"' then return table.concat(out, "", 1, n), pos + 1 end
+
+    n = n + 1
+    if c == '\\' then
+      local nextc = str:sub(pos + 1, pos + 1)
+      if not nextc then error("Malformed JSON (in string)") end
+      if nextc == "u" then
+        local num = tonumber(str:sub(pos + 2, pos + 5), 16)
+        if not num then error("Malformed JSON (in unicode string) ") end
+        if num <= 255 then
+          pos, out[n] = pos + 6, string.char(num)
+        else
+          pos, out[n] = pos + 6, "?"
+        end
+      else
+        pos, out[n] = pos + 2, esc_map[nextc] or nextc
+      end
+    else
+      pos, out[n] = pos + 1, c
+    end
+  end
 end
 
 local function parse_num_val(str, pos)
@@ -31,7 +51,7 @@ end
 local null = {}
 local literals = {['true'] = true, ['false'] = false, ['null'] = null }
 
--- Build a table of escape characters
+-- Build a table of Lua->JSON escape characters
 local escapes = {}
 for i = 0, 255 do
   local c = string.char(i)
@@ -40,7 +60,7 @@ for i = 0, 255 do
   else escapes[c] = ("\\u00%02x"):format(i)
   end
 end
-escapes[10], escapes[34], escapes[92] = "\n", "\"", "\\"
+escapes["\t"], escapes["\n"], escapes["\r"], escapes["\""], escapes["\\"] = "\\t", "\\n", "\\r", "\\\"", "\\\\"
 
 local function parse(str, pos, end_delim)
   pos = pos or 1
