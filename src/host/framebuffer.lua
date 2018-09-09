@@ -3,8 +3,8 @@
 local stringify = require("json").stringify
 
 local colour_lookup = {}
-for i = 0, 16 do
-  colour_lookup[string.format("%x", i)] = 2 ^ i
+for i = 0, 15 do
+  colour_lookup[2 ^ i] = string.format("%x", i)
 end
 
 local void = function() end
@@ -53,7 +53,7 @@ local function buffer(original)
     for i = 0, 15 do
       local c = 2 ^ i
       palette[c] = { original.getPaletteColour( c ) }
-      palette_24[c] = colours.rgb8(original.getPaletteColour( c ))
+      palette_24[colour_lookup[c]] = colours.rgb8(original.getPaletteColour( c ))
     end
   end
 
@@ -158,16 +158,26 @@ local function buffer(original)
   end
 
   function redirect.setCursorPos(x, y)
-    cursor_x = math.floor(tonumber(x)) or cursor_x
-    cursor_y = math.floor(tonumber(y)) or cursor_y
+    if type(x) ~= "number" then error("bad argument #1 (expected number, got " .. type(x) .. ")", 2) end
+    if type(y) ~= "number" then error("bad argument #2 (expected number, got " .. type(y) .. ")", 2) end
 
-    if x ~= cursor_x or y ~= cursor_y then dirty = true end
+    if x ~= cursor_x or y ~= cursor_y then
+      cursor_x = math.floor(x)
+      cursor_y = math.floor(y)
+      dirty = true
+    end
+
     return original.setCursorPos(x, y)
   end
 
   function redirect.setCursorBlink(b)
-    cursor_blink = b
-    if cursor_blink ~= b then dirty = true end
+    if type(b) ~= "boolean" then error("bad argument #1 (expected boolean, got " .. type(b) .. ")", 2) end
+
+    if cursor_blink ~= b then
+      cursor_blink = b
+      dirty = true
+    end
+
     return original.setCursorBlink(b)
   end
 
@@ -176,7 +186,7 @@ local function buffer(original)
   end
 
   function redirect.scroll(n)
-    n = tonumber(n) or 1
+    if type(n) ~= "number" then error("bad argument #1 (expected number, got " .. type(n) .. ")", 2) end
 
     local empty_text = string.rep(" ", sizeX)
     local empty_text_colour = string.rep(cur_text_colour, sizeX)
@@ -200,15 +210,27 @@ local function buffer(original)
   end
 
   function redirect.setTextColour(clr)
-    cur_text_colour = colour_lookup[clr] or string.format("%x", math.floor(math.log(clr) / math.log(2)))
-    dirty = true
+    if type(clr) ~= "number" then error("bad argument #1 (expected number, got " .. type(clr) .. ")", 2) end
+    local new_colour = colour_lookup[clr] or error("Invalid colour (got " .. clr .. ")" , 2)
+
+    if new_colour ~= cur_text_colour then
+      dirty = true
+      cur_text_colour = new_colour
+    end
+
     return original.setTextColour(clr)
   end
   redirect.setTextColor = redirect.setTextColour
 
   function redirect.setBackgroundColour(clr)
-    cur_back_colour = colour_lookup[clr] or string.format("%x", math.floor(math.log(clr) / math.log(2)))
-    dirty = true
+    if type(clr) ~= "number" then error("bad argument #1 (expected number, got " .. type(clr) .. ")", 2) end
+    local new_colour = colour_lookup[clr] or error("Invalid colour (got " .. clr .. ")" , 2)
+
+    if new_colour ~= cur_back_colour then
+      dirty = true
+      cur_back_colour = new_colour
+    end
+
     return original.setBackgroundColour(clr)
   end
   redirect.setBackgroundColor = redirect.setBackgroundColour
@@ -232,6 +254,7 @@ local function buffer(original)
     function redirect.setPaletteColour(colour, r, g, b)
       local palcol = palette[colour]
       if not palcol then error("Invalid colour (got " .. tostring(colour) .. ")", 2) end
+
       if type(r) == "number" and g == nil and b == nil then
           palcol[1], palcol[2], palcol[3] = colours.rgb8(r)
           palette_24[colour] = r
@@ -241,7 +264,7 @@ local function buffer(original)
           if type(b) ~= "number" then error("bad argument #4 (expected number, got " .. type(b ) .. ")", 2 ) end
 
           palcol[1], palcol[2], palcol[3] = r, g, b
-          palette_24[colour] = colours.rgb8(r, g, b)
+          palette_24[colour_lookup[colour]] = colours.rgb8(r, g, b)
       end
 
       dirty = true

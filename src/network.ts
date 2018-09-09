@@ -124,7 +124,7 @@ export type PacketTerminalContents = {
   cursorX: number, cursorY: number, cursorBlink: boolean,
   curFore: string, curBack: string,
 
-  palette: number[][],
+  palette: { [colour: string]: number };
 
   text: string[],
   fore: string[],

@@ -187,7 +187,6 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       const { terminal, terminalChanged } = this.state;
 
       // TODO: Simplify our storage of terminals.
-      // TODO: Palettes
       terminal.resize(packet.width, packet.height);
 
       terminal.cursorX = packet.cursorX - 1;
@@ -197,6 +196,13 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       terminal.text = packet.text;
       terminal.fore = packet.fore;
       terminal.back = packet.back;
+
+      for (const key in packet.palette) {
+        if (packet.palette.hasOwnProperty(key)) {
+          const colour = packet.palette[key];
+          terminal.palette[key] = `rgb(${(colour >> 16) & 0xFF},${(colour >> 8) & 0xFF},${colour & 0xFF}`;
+        }
+      }
 
       terminalChanged.signal();
     } else if (packet.packet === PacketCode.FileAction) {
