@@ -22,8 +22,13 @@ dist: package.json package-lock.json build public/index.html public/404.html pub
 	cp -r build/*.js build/server dist/build
 
 	mkdir -p dist/public
+
 	cp public/index.html dist/public
+	cp public/404.html dist/public
 	cp public/cloud.lua dist/public
+
+	sed -i -e "s/CSS_VERSION/$$(sha1sum "public/assets/main.css" | cut -c-10)/g" dist/public/*.html
+	sed -i -e "s/JS_VERSION/$$(sha1sum "public/assets/main.js" | cut -c-10)/g" dist/public/*.html
 
 	mkdir -p dist/public/assets
 	cp public/assets/termFont.png dist/public/assets
