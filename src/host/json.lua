@@ -31,6 +31,17 @@ end
 local null = {}
 local literals = {['true'] = true, ['false'] = false, ['null'] = null }
 
+-- Build a table of escape characters
+local escapes = {}
+for i = 0, 255 do
+  local c = string.char(i)
+  if i >= 32 and i <= 126
+  then escapes[c] = c
+  else escapes[c] = ("\\u00%02x"):format(i)
+  end
+end
+escapes[10], escapes[34], escapes[92] = "\n", "\"", "\\"
+
 local function parse(str, pos, end_delim)
   pos = pos or 1
   if pos > #str then error('Reached unexpected end of input.') end
@@ -106,7 +117,11 @@ local function stringify_impl(t, out, n)
       error("Cannot serialize key " .. first_ty)
     end
   elseif ty == "string" then
-    out[n],n  = gsub(format("%q", t), "\n", "n"), n + 1
+    if t:match("^[ -~]*$") then
+      out[n], n = gsub(format("%q", t), "\n", "n"), n + 1
+    else
+      out[n], n = "\"" .. gsub(t, ".", escapes) .. "\"", n + 1
+    end
     return n
   elseif ty == "number" or ty == "boolean" then
     out[n],n  = tostring(t), n + 1
