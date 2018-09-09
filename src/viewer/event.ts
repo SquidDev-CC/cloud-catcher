@@ -1,4 +1,4 @@
-import { PacketCode, Packet } from "../network";
+import { Packet } from "../network";
 
 export class BufferingEventQueue<T> {
   private readonly queue: T[] = [];

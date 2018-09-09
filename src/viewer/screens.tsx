@@ -58,6 +58,11 @@ export const TokenDisplay = ({ token }: TokenDisplayProps) =>
           30 high. Note this will hide the terminal on the local computer.
         </li>
         <li>Use <code>cloud edit FILE</code> to edit a file within your browser</li>
+        <li>
+          Click your token in the top-left corner in order to create a link to
+          this session. This can be shared with friends, to allow multiple
+          people to view your computer!
+        </li>
       </ul>
     </div>
   </div>;
