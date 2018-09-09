@@ -13,7 +13,7 @@ all: public/assets/main.js build
 clean:
 	rm -rf build dist public/cloud.lua public/assets/main.js
 
-dist: package.json package-lock.json build public/index.html public/404.html public/assets/main.css public/assets/main.js public/assets/monaco-worker.js public/assets/termFont.png public/cloud.lua
+dist: package.json package-lock.json build public/index.html public/404.html public/assets/main.css public/assets/main.js public/assets/monaco-worker.js public/assets/term_font.png public/assets/term_font_hd.png public/cloud.lua
 	rm -rf dist
 	mkdir dist
 	cp package.json package-lock.json dist
@@ -31,7 +31,8 @@ dist: package.json package-lock.json build public/index.html public/404.html pub
 	sed -i -e "s/JS_VERSION/$$(sha1sum "public/assets/main.js" | cut -c-10)/g" dist/public/*.html
 
 	mkdir -p dist/public/assets
-	cp public/assets/termFont.png dist/public/assets
+	cp public/assets/term_font.png dist/public/assets
+	cp public/assets/term_font_hd.png dist/public/assets
 	uglifycss public/assets/main.css > dist/public/assets/main.css
 	uglifyjs public/assets/main.js > dist/public/assets/main.js
 	uglifyjs public/assets/monaco-worker.js > dist/public/assets/monaco-worker.js

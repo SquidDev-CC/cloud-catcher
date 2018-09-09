@@ -37,6 +37,8 @@ export class Main extends Component<MainProps, MainState> {
       showInvisible: true,
       trimWhitespace: true,
 
+      terminalFont: "assets/term_font.png",
+
       darkMode: false,
       terminalBorder: false,
     };

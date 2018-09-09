@@ -1,5 +1,6 @@
 import { Component, h } from "preact";
-import { PacketCode, FileAction, FileActionFlags, FileConsume, encodePacket } from "../../network";
+import { computeDiff } from "../../diff";
+import { FileAction, FileActionFlags, FileConsume, PacketCode, encodePacket } from "../../network";
 import { Token } from "../../token";
 import { BufferingEventQueue, PacketEvent, Semaphore } from "../event";
 import { fletcher32 } from "../packet";
@@ -8,7 +9,6 @@ import { Terminal } from "../terminal/component";
 import { TerminalData } from "../terminal/data";
 import Editor, * as editor from "./editor";
 import { Notification, NotificationBody, NotificationKind, Notifications } from "./notifications";
-import { computeDiff } from "../../diff";
 
 type FileInfo = {
   name: string,
@@ -100,7 +100,8 @@ export class Computer extends Component<ComputerProps, ComputerState> {
           {fileList}
         </div>
         {activeInfo == null || activeFile == null
-          ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} focused={focused} />
+          ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} focused={focused}
+            font={settings.terminalFont} />
           : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly} settings={settings} focused={focused}
             onChanged={this.createChanged(activeFile)}
             doSave={this.createSave(activeFile)} doClose={this.createClose(activeFile)} />}

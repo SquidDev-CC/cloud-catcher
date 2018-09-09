@@ -10,6 +10,7 @@ export type TerminalProps = {
   connection: WebSocket,
   focused: boolean,
   terminal: TerminalData,
+  font: string,
 };
 
 const clamp = (value: number, min: number, max: number) => {
@@ -108,9 +109,15 @@ export class Terminal extends Component<TerminalProps, {}> {
   private draw(time: number) {
     if (!this.canvasElem || !this.canvasContext) return;
 
-    const terminal = this.props.terminal;
+    const { terminal, font: fontPath } = this.props;
     const sizeX = terminal.sizeX || 51;
     const sizeY = terminal.sizeY || 19;
+
+    const font = render.loadFont(fontPath);
+    if (font.promise) {
+      font.promise.then(() => this.queueDraw());
+      return;
+    }
 
     const blink = Math.floor(time / 400) % 2 === 0;
     const changed = this.changed;
@@ -127,7 +134,7 @@ export class Terminal extends Component<TerminalProps, {}> {
     this.changed = false;
 
     // Calculate terminal scaling to fit the screen
-    const actualWidth = this.canvasElem.parentElement!.clientWidth - render.margin;
+    const actualWidth = this.canvasElem.parentElement!.clientWidth - render.terminalMargin;
     const width = sizeX * render.pixelWidth;
     const height = sizeY * render.pixelHeight;
 
@@ -143,21 +150,27 @@ export class Terminal extends Component<TerminalProps, {}> {
     // out of range and hasn"t changed.
     if (!changed) {
       if (blink) {
-        render.foreground(ctx, terminal.cursorX, terminal.cursorY, terminal.currentFore, "_", scale, terminal.palette);
+        render.foreground(
+          ctx, terminal.cursorX, terminal.cursorY, terminal.currentFore, "_", terminal.palette,
+          scale, font,
+        );
       } else {
         const x = terminal.cursorX;
         const y = terminal.cursorY;
 
         render.background(ctx, x, y, terminal.back[y].charAt(x), scale, sizeX, sizeY, terminal.palette);
-        render.foreground(ctx, x, y, terminal.fore[y].charAt(x), terminal.text[y].charAt(x), scale, terminal.palette);
+        render.foreground(
+          ctx, x, y, terminal.fore[y].charAt(x), terminal.text[y].charAt(x), terminal.palette,
+          scale, font,
+        );
       }
 
       return;
     }
 
     // Actually update the canvas dimensions.
-    const canvasWidth = width * scale + render.margin * 2;
-    const canvasHeight = height * scale + render.margin * 2;
+    const canvasWidth = width * scale + render.terminalMargin * 2;
+    const canvasHeight = height * scale + render.terminalMargin * 2;
 
     if (this.canvasElem.height !== canvasHeight || this.canvasElem.width !== canvasWidth) {
       this.canvasElem.height = canvasHeight;
@@ -173,9 +186,9 @@ export class Terminal extends Component<TerminalProps, {}> {
 
     // And render!
     if (terminal.sizeX === 0 && terminal.sizeY === 0) {
-      render.bsod(ctx, sizeX, sizeY, scale, "No terminal output");
+      render.bsod(ctx, sizeX, sizeY, "No terminal output", scale, font);
     } else {
-      render.terminal(ctx, terminal, scale, blink);
+      render.terminal(ctx, terminal, blink, scale, font);
     }
   }
 
@@ -202,7 +215,7 @@ export class Terminal extends Component<TerminalProps, {}> {
 
     this.props.connection.send(encodePacket({
       packet: PacketCode.TerminalEvents,
-      events: [{ name: "paste", args: [content] }]
+      events: [{ name: "paste", args: [content] }],
     }));
   }
 
@@ -220,12 +233,12 @@ export class Terminal extends Component<TerminalProps, {}> {
     if (event.type === "mousemove" && event.buttons === 0) return;
 
     const x = clamp(
-      Math.floor((event.pageX - this.canvasElem.offsetLeft - render.margin)
-        / (this.canvasElem.width - 2 * render.margin) * this.props.terminal.sizeX) + 1,
+      Math.floor((event.pageX - this.canvasElem.offsetLeft - render.terminalMargin)
+        / (this.canvasElem.width - 2 * render.terminalMargin) * this.props.terminal.sizeX) + 1,
       1, this.props.terminal.sizeX);
     const y = clamp(
-      Math.floor((event.pageY - this.canvasElem.offsetTop - render.margin)
-        / (this.canvasElem.height - 2 * render.margin) * this.props.terminal.sizeY) + 1,
+      Math.floor((event.pageY - this.canvasElem.offsetTop - render.terminalMargin)
+        / (this.canvasElem.height - 2 * render.terminalMargin) * this.props.terminal.sizeY) + 1,
       1, this.props.terminal.sizeY);
 
     switch (event.type) {
@@ -273,12 +286,12 @@ export class Terminal extends Component<TerminalProps, {}> {
     if (!this.canvasElem) return;
 
     const x = clamp(
-      Math.floor((event.pageX - this.canvasElem.offsetLeft - render.margin)
-        / (this.canvasElem.width - 2 * render.margin) * this.props.terminal.sizeX) + 1,
+      Math.floor((event.pageX - this.canvasElem.offsetLeft - render.terminalMargin)
+        / (this.canvasElem.width - 2 * render.terminalMargin) * this.props.terminal.sizeX) + 1,
       1, this.props.terminal.sizeX);
     const y = clamp(
-      Math.floor((event.pageY - this.canvasElem.offsetTop - render.margin)
-        / (this.canvasElem.height - 2 * render.margin) * this.props.terminal.sizeY) + 1,
+      Math.floor((event.pageY - this.canvasElem.offsetTop - render.terminalMargin)
+        / (this.canvasElem.height - 2 * render.terminalMargin) * this.props.terminal.sizeY) + 1,
       1, this.props.terminal.sizeY);
 
     if (event.deltaY !== 0) {

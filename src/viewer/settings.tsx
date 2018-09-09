@@ -5,6 +5,9 @@ export type Settings = {
   showInvisible: boolean,
   trimWhitespace: boolean,
 
+  // Terminal settings
+  terminalFont: string,
+
   // General settings
   darkMode: boolean,
   terminalBorder: boolean,
@@ -33,6 +36,17 @@ export const Settings = ({ settings, update }: SettingsProperties): JSX.Element 
       <label>
         <input type="checkbox" checked={settings.trimWhitespace} onInput={(e: Event) => updateWith({ trimWhitespace: (e.target as HTMLInputElement).checked })} />
         Trim whitespace
+      </label>
+    </div>
+
+    <h3>Terminal settings</h3>
+    <div class="form-group">
+      <label>
+        Font style
+        <select value={settings.terminalFont} onInput={(e: Event) => updateWith({ terminalFont: (e.target as HTMLInputElement).value })} >
+          <option value="assets/term_font.png">Standard Font</option>
+          <option value="assets/term_font_hd.png">High-definition font</option>
+        </select>
       </label>
     </div>
 
