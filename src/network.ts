@@ -293,7 +293,7 @@ export const allowedFrom = (code: PacketCode, capabilities: Set<Capability>) => 
  * The maximum size a packet can be. Yes, this is silly, but let's put
  * some vague effort into preventing abuse.
  */
-export const MAX_PACKET_SIZE = 16384;
+export const MAX_PACKET_SIZE = 20000;
 
 export const encodePacket = (packet: Packet) => JSON.stringify(packet);
 export const decodePacket = (message: string) => {
