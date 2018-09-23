@@ -235,7 +235,7 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
   -- We maintain a buffer of "fake" events in order to allow us to operate
   -- within multishell
   local event
-  if pending_n > 1 then
+  if pending_n >= 1 then
     event = table.remove(pending_events, 1)
     pending_n = pending_n - 1
   else

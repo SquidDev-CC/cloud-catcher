@@ -39,7 +39,7 @@ enum BasicKeys {
   KeyI = 23,
   KeyO = 24,
   KeyP = 25,
-  BracketLet = 26,
+  BracketLeft = 26,
   BracketRight = 27,
   Enter = 28,
   ControlLeft = 29,

@@ -297,7 +297,7 @@ export class Terminal extends Component<TerminalProps, {}> {
     if (event.deltaY !== 0) {
       this.props.connection.send(encodePacket({
         packet: PacketCode.TerminalEvents,
-        events: [{ name: "mouse_scroll", args: [Math.sign(event.deltaY) + 1, x, y] }],
+        events: [{ name: "mouse_scroll", args: [Math.sign(event.deltaY), x, y] }],
       }));
     }
   }
