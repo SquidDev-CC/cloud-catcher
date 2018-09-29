@@ -12,14 +12,8 @@ export type Font = {
   paletteCache: { [key: string]: HTMLCanvasElement },
 };
 
-const cellWidth = 6;
-const cellHeight = 9;
-
-// Computed from above: the GCD of the two dimensions.
-// By always scaling to an integer we ensure the texture offsets are also integers.
-const cellGCD = 3;
-export const pixelWidth = cellWidth / cellGCD;
-export const pixelHeight = cellHeight / cellGCD;
+export const cellWidth = 6;
+export const cellHeight = 9;
 
 export const terminalMargin = 4;
 
@@ -83,8 +77,6 @@ export const background = (
   width: number, height: number,
   palette: Palette,
 ): void => {
-  scale /= 3;
-
   let actualWidth = cellWidth * scale;
   let actualHeight = cellHeight * scale;
   let cellX = x * actualWidth + terminalMargin;
@@ -118,8 +110,6 @@ export const foreground = (
   scale: number, font: Font,
 ): void => {
   if (font.promise) return;
-
-  scale /= 3;
 
   const actualWidth = cellWidth * scale;
   const actualHeight = cellHeight * scale;
@@ -166,13 +156,11 @@ export const bsod = (
   ctx: CanvasRenderingContext2D, width: number, height: number, text: string,
   scale: number, font: Font,
 ) => {
-  const oScale = scale / 3;
-
   ctx.beginPath();
   ctx.rect(
     0, 0,
-    width * cellWidth * oScale + terminalMargin * 2,
-    height * cellHeight * oScale + terminalMargin * 2,
+    width * cellWidth * scale + terminalMargin * 2,
+    height * cellHeight * scale + terminalMargin * 2,
   );
   ctx.fillStyle = defaultPalette.b;
   ctx.fill();

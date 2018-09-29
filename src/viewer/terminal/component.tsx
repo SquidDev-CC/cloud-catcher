@@ -164,14 +164,12 @@ export class Terminal extends Component<TerminalProps, {}> {
 
     // Calculate terminal scaling to fit the screen
     const actualWidth = this.canvasElem.parentElement!.clientWidth - render.terminalMargin;
-    const width = sizeX * render.pixelWidth;
-    const height = sizeY * render.pixelHeight;
+    const width = sizeX * render.cellWidth;
+    const height = sizeY * render.cellHeight;
 
     // The scale has to be an integer (though converted within the renderer) to ensure pixels are integers.
     // Otherwise you get texture issues.
-    let scale = Math.floor(actualWidth / width);
-    if (scale < 1) scale = 1;
-    if (scale > 6) scale = 6;
+    const scale = Math.max(1, Math.floor(actualWidth / width));
 
     const ctx = this.canvasContext;
 
@@ -204,10 +202,13 @@ export class Terminal extends Component<TerminalProps, {}> {
     if (this.canvasElem.height !== canvasHeight || this.canvasElem.width !== canvasWidth) {
       this.canvasElem.height = canvasHeight;
       this.canvasElem.width = canvasWidth;
-    }
 
-    if (this.barElem && this.barElem.clientWidth !== canvasWidth) {
-      this.barElem.style.width = `${canvasWidth}px`;
+      this.canvasElem.style.height = `${canvasHeight}px`;
+      this.canvasElem.style.width = `${canvasWidth}px`;
+
+      if (this.barElem) {
+        this.barElem.style.width = `${canvasWidth}px`;
+      }
     }
 
     // Prevent blur when up/down-scaling
