@@ -19,6 +19,10 @@
       "no-unused-variable": [true, "check-parameters", {"ignore-pattern": "^_"}],
       "object-literal-key-quotes": [true, "consistent-as-needed"],
       "object-literal-sort-keys": false,
+      "ordered-imports": [
+        true,
+        { "named-imports-order": "lowercase-last" }
+      ],
       "variable-name": [
         true, "ban-keyboards",
         "check-format", "allow-leading-underscore", "allow-pascal-case"

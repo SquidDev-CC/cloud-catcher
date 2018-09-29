@@ -1,4 +1,4 @@
-import { defaultPalette, Palette, PaletteColour, TerminalData } from "./data";
+import { Palette, PaletteColour, TerminalData, defaultPalette } from "./data";
 
 export type Font = {
   path: string,

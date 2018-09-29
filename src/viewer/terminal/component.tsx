@@ -56,7 +56,6 @@ export class Terminal extends Component<TerminalProps, {}> {
 
   public constructor(props: TerminalProps, context: any) {
     super(props, context);
-    const { id, label } = props;
 
     this.vdom = [
       <canvas class="terminal-canvas"

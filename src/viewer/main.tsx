@@ -180,10 +180,6 @@ export class Main extends Component<MainProps, MainState> {
     if (e.target === e.currentTarget) this.setState({ dialogue: undefined });
   }
 
-  private closeDialogueKey = (e: KeyboardEvent) => {
-    if (e.code === "Escape") this.setState({ dialogue: undefined });
-  }
-
   private computerVDom = ({ events, websocket, settings, dialogue }: MainState) => {
     return <Computer events={events} connection={websocket} token={this.props.token}
       settings={settings} focused={dialogue === undefined} />;
