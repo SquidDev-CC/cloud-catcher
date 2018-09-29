@@ -210,25 +210,42 @@ end
 -- Here we gooooooooooooh,
 -- Rockin' all over the world
 
+local info_dirty, last_label, get_label = true, nil, os.getComputerLabel
+local function send_info()
+  last_label = get_label()
+  info_dirty = false
+  remote.send(json.stringify {
+    packet = 0x12,
+    id = os.getComputerID(),
+    label = last_label,
+  })
+end
+
 local ok, res = true
 if co then ok, res = coroutine.resume(co, "shell") end
 local last_change, last_timer = os.clock(), nil
 local pending_events, pending_n = {}, 0
 while ok and (not co or coroutine.status(co) ~= "dead") do
-  if server_term and last_timer == nil and buffer.is_dirty() then
+  if not info_dirty and last_label ~= get_label() then info_dirty = true end
+  if server_term and last_timer == nil and (buffer.is_dirty() or info_dirty) then
     -- If the buffer is dirty and we've no redraw queued and somebody
     -- cares about us.
     local now = os.clock()
 
     if now - last_change < 0.04 then
-      -- If we last changed within the last tick then schedule a redraw to prevent
-      -- multiple ticks
+      -- If we last changed within the last tick then schedule a send to prevent
+      -- doing so multiple times in a tick
       last_timer = os.startTimer(0)
     else
-      -- Otherwise send the redraw immediately
-      remote.send(buffer.serialise())
-      buffer.clear_dirty()
+      -- Otherwise send the changes immediately
       last_change = os.clock()
+
+      if buffer.is_dirty() then
+        remote.send(buffer.serialise())
+        buffer.clear_dirty()
+      end
+
+      if info_dirty then send_info() end
     end
   end
 
@@ -247,9 +264,9 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
     -- send it to any viewers.
     last_timer = nil
     if server_term then
-      if buffer.is_dirty() then remote.send(buffer.serialise()) end
-      buffer.clear_dirty()
       last_change = os.clock()
+      if buffer.is_dirty() then remote.send(buffer.serialise()) buffer.clear_dirty() end
+      if info_dirty then send_info() end
     end
 
   elseif event[1] == "websocket_closed" and event[2] == url then
@@ -270,11 +287,12 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
         for _, cap in ipairs(packet.capabilities) do
           if cap == "terminal:view" and buffer ~= nil then
             -- If we have some viewer and they're listening then resend the
-            -- terminal, just in case.
+            -- terminal and info, just in case.
             server_term = true
 
-            remote.send(buffer.serialise())
-            buffer.clear_dirty()
+            remote.send(buffer.serialise()) buffer.clear_dirty()
+            send_info()
+
             last_change = os.clock()
           elseif cap == "file:host" then
             server_file_host = true
