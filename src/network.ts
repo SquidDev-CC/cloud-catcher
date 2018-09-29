@@ -56,6 +56,7 @@ export const enum PacketCode {
 
   TerminalContents = 0x10,
   TerminalEvents = 0x11,
+  TerminalInfo = 0x12,
 
   FileListing = 0x20,
   FileRequest = 0x21,
@@ -69,6 +70,7 @@ export type Packet
   | PacketConnectionPing
   | PacketTerminalContents
   | PacketTerminalEvents
+  | PacketTerminalInfo
   | PacketFileListing
   | PacketFileReqeust
   | PacketFileAction
@@ -138,6 +140,13 @@ export type PacketTerminalEvents = {
   packet: PacketCode.TerminalEvents,
 
   events: Array<{ name: string, args: any[] }>,
+};
+
+export type PacketTerminalInfo = {
+  packet: PacketCode.TerminalInfo,
+
+  id: number,
+  label?: string,
 };
 
 export type FileEntry = {
@@ -273,7 +282,9 @@ export const allowedFrom = (code: PacketCode, capabilities: Set<Capability>) => 
     case PacketCode.ConnectionPing: return true;
     case PacketCode.ConnectionAbuse: return false;
 
-    case PacketCode.TerminalContents: return capabilities.has(Capability.TerminalHost);
+    case PacketCode.TerminalContents:
+    case PacketCode.TerminalInfo:
+      return capabilities.has(Capability.TerminalHost);
     case PacketCode.TerminalEvents:
       return capabilities.has(Capability.TerminalView);
 

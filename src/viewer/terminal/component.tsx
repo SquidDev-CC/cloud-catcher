@@ -1,6 +1,7 @@
 import { Component, h } from "preact";
 import { PacketCode, encodePacket } from "../../network";
 import { Semaphore } from "../event";
+import { NoEntry } from "../font";
 import { TerminalData } from "../terminal/data";
 import { convertKey, convertMouseButton, convertMouseButtons } from "../terminal/input";
 import * as render from "../terminal/render";
@@ -11,6 +12,9 @@ export type TerminalProps = {
   focused: boolean,
   terminal: TerminalData,
   font: string,
+
+  id?: number,
+  label?: string,
 };
 
 const clamp = (value: number, min: number, max: number) => {
@@ -19,10 +23,25 @@ const clamp = (value: number, min: number, max: number) => {
   return value;
 };
 
+const labelElement = (id?: number, label?: string) => {
+  if (id === undefined) {
+    return <span class="terminal-info">Connected</span>;
+  } else if (label === undefined) {
+    return <span class="terminal-info">
+      Connected to computer #{id}
+    </span>;
+  } else {
+    return <span class="terminal-info">
+      Connected to <span class="terminal-info-label">{label}</span> (#{id})
+    </span>;
+  }
+};
+
 export class Terminal extends Component<TerminalProps, {}> {
   private canvasElem?: HTMLCanvasElement;
   private canvasContext?: CanvasRenderingContext2D;
   private inputElem?: HTMLInputElement;
+  private barElem?: HTMLDivElement;
 
   private changed: boolean = false;
   private lastBlink: boolean = false;
@@ -30,21 +49,22 @@ export class Terminal extends Component<TerminalProps, {}> {
   private mounted: boolean = false;
   private drawQueued: boolean = false;
 
-  private readonly vdom: JSX.Element;
+  private readonly vdom: JSX.Element[];
 
   private lastX: number = -1;
   private lastY: number = -1;
 
   public constructor(props: TerminalProps, context: any) {
     super(props, context);
+    const { id, label } = props;
 
-    this.vdom = <div class="terminal-view">
+    this.vdom = [
       <canvas class="terminal-canvas"
         onMouseDown={this.onMouse} onMouseUp={this.onMouse} onMouseMove={this.onMouse}
-        onWheel={this.onMouseWheel} onContextMenu={this.onContext} />
+        onWheel={this.onMouseWheel} onContextMenu={this.onEventDefault} />,
       <input type="text" class="terminal-input"
-        onPaste={this.onPaste} onKeyDown={this.onKey} onKeyUp={this.onKey}></input>
-    </div>;
+        onPaste={this.onPaste} onKeyDown={this.onKey} onKeyUp={this.onKey}></input>,
+    ];
   }
 
   public componentDidMount() {
@@ -52,6 +72,7 @@ export class Terminal extends Component<TerminalProps, {}> {
     this.canvasElem = this.base.querySelector(".terminal-canvas") as HTMLCanvasElement;
     this.canvasContext = this.canvasElem.getContext("2d") as CanvasRenderingContext2D;
     this.inputElem = this.base.querySelector(".terminal-input") as HTMLInputElement;
+    this.barElem = this.base.querySelector(".terminal-bar") as HTMLDivElement;
 
     // Subscribe to some events to allow us to shedule a redraw
     window.addEventListener("resize", this.onResized);
@@ -82,8 +103,16 @@ export class Terminal extends Component<TerminalProps, {}> {
     this.drawQueued = false;
   }
 
-  public render() {
-    return this.vdom;
+  public render({ id, label }: TerminalProps) {
+    return <div class="terminal-view">
+      {...this.vdom}
+      <div class="terminal-bar">
+        {labelElement(id, label)}
+        <button type="none" class="action-button terminal-terminate" title="Send a `terminate' event to the computer." onClick={this.onTerminate}>
+          <NoEntry />
+        </button>
+      </div>
+    </div>;
   }
 
   public componentDidUpdate() {
@@ -177,6 +206,10 @@ export class Terminal extends Component<TerminalProps, {}> {
       this.canvasElem.width = canvasWidth;
     }
 
+    if (this.barElem && this.barElem.clientWidth !== canvasWidth) {
+      this.barElem.style.width = `${canvasWidth}px`;
+    }
+
     // Prevent blur when up/down-scaling
     (ctx as any).imageSmoothingEnabled = false; // Isn"t standardised so we have to cast.
     ctx.oImageSmoothingEnabled = false;
@@ -220,12 +253,12 @@ export class Terminal extends Component<TerminalProps, {}> {
   }
 
   private onPaste = (event: ClipboardEvent) => {
-    event.preventDefault();
+    this.onEventDefault(event);
     this.paste((event.clipboardData || (window as any).clipboardData));
   }
 
   private onMouse = (event: MouseEvent) => {
-    event.preventDefault();
+    this.onEventDefault(event);
     if (!this.canvasElem) return;
 
     // If we"re a mouse move and nobody is pressing anything, let"s
@@ -277,12 +310,10 @@ export class Terminal extends Component<TerminalProps, {}> {
         }
       }
     }
-
-    if (this.inputElem) this.inputElem.focus();
   }
 
   private onMouseWheel = (event: WheelEvent) => {
-    event.preventDefault();
+    this.onEventDefault(event);
     if (!this.canvasElem) return;
 
     const x = clamp(
@@ -302,7 +333,7 @@ export class Terminal extends Component<TerminalProps, {}> {
     }
   }
 
-  private onContext = (event: MouseEvent) => {
+  private onEventDefault = (event: Event) => {
     event.preventDefault();
     if (this.inputElem) this.inputElem.focus();
   }
@@ -337,6 +368,14 @@ export class Terminal extends Component<TerminalProps, {}> {
         events: [{ name: "key_up", args: [code] }],
       }));
     }
+  }
+
+  private onTerminate = (event: Event) => {
+    this.onEventDefault(event);
+    this.props.connection.send(encodePacket({
+      packet: PacketCode.TerminalEvents,
+      events: [{ name: "terminate", args: [] }],
+    }));
   }
 
   private onChanged = () => {

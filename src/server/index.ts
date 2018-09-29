@@ -204,6 +204,7 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
             break;
 
           case PacketCode.TerminalContents:
+          case PacketCode.TerminalInfo:
             for (const client of connection.terminalViewers) client.send(message, sendCallback);
             break;
 

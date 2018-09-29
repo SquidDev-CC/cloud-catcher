@@ -26,6 +26,25 @@ pre { padding: 10px; }
   colour: #aaa;
 }
 
+.action-button {
+  background: none;
+  color: inherit;
+
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  font-size: 1em;
+  font-family: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.icon-font {
+  max-width: 1em;
+  max-height: 1em;
+}
+
 .info-container {
   position: relative;
   top: 80px;
@@ -62,7 +81,31 @@ pre { padding: 10px; }
   -ms-interpolation-mode: nearest-neighbor;
 
   display: block;
-  margin: 30px auto;
+  margin: 30px auto 0px auto;
+}
+
+.terminal-bar {
+  margin: 0px auto;
+  background: #eee;
+  font-size: 0.8em;
+}
+
+.terminal-info, .terminal-terminate {
+  padding: 3px;
+  display: inline-block;
+}
+
+.terminal-info-label {
+  color: #444;
+  font-weight: 600;
+}
+
+.terminal-terminate {
+  float: right;
+}
+
+.terminal-terminate:hover {
+  background: #ddd;
 }
 
 .terminal-input {
@@ -191,8 +234,6 @@ pre { padding: 10px; }
     left: 5px;
     opacity: 0.6;
     z-index: 50;
-
-    cursor: pointer;
 }
 
 .settings-cog:hover { opacity: 1; }

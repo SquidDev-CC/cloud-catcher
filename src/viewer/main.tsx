@@ -4,6 +4,7 @@ import { Capability, PacketCode, decodePacket, encodePacket } from "../network";
 import { Token } from "../token";
 import { Computer } from "./computer";
 import { BufferingEventQueue, PacketEvent } from "./event";
+import { Cog } from "./font";
 import { LostConnection, TokenDisplay, UnknownError } from "./screens";
 import { Settings } from "./settings";
 
@@ -120,6 +121,7 @@ export class Main extends Component<MainProps, MainState> {
           break;
 
         case PacketCode.TerminalContents:
+        case PacketCode.TerminalInfo:
         case PacketCode.FileAction:
         case PacketCode.FileConsume:
         case PacketCode.FileListing:
@@ -157,7 +159,9 @@ export class Main extends Component<MainProps, MainState> {
   public render(_props: MainProps, state: MainState) {
     return <div class="container">
       {state.currentVDom(state)}
-      <div class="settings-cog" title="Configure how CloudCatcher behaves" onClick={this.openSettings}>&#x2699;</div>
+      <button class="action-button settings-cog" title="Configure how CloudCatcher behaves" onClick={this.openSettings}>
+        <Cog />
+      </button>
       {
         state.dialogue ?
           <div class="dialogue-overlay" onClick={this.closeDialogueClick}>

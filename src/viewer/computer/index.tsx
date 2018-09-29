@@ -41,6 +41,9 @@ type ComputerState = {
 
   terminal: TerminalData,
   terminalChanged: Semaphore,
+
+  id?: number,
+  label?: string,
 };
 
 export class Computer extends Component<ComputerProps, ComputerState> {
@@ -66,7 +69,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     this.props.events.detach(this.onPacket);
   }
 
-  public render({ connection, token, settings, focused }: ComputerProps, { activeFile, files, notifications, terminal, terminalChanged }: ComputerState) {
+  public render({ connection, token, settings, focused }: ComputerProps, { activeFile, files, notifications, terminal, terminalChanged, id, label }: ComputerState) {
     const fileList = files.map(x => {
       const fileClasses = "file-entry" + (x.name === activeFile ? " active" : "");
       const iconClasses = "file-icon"
@@ -101,7 +104,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         </div>
         {activeInfo == null || activeFile == null
           ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} focused={focused}
-            font={settings.terminalFont} />
+            font={settings.terminalFont} id={id} label={label} />
           : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly} settings={settings} focused={focused}
             onChanged={this.createChanged(activeFile)}
             doSave={this.createSave(activeFile)} doClose={this.createClose(activeFile)} />}
@@ -206,6 +209,11 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       }
 
       terminalChanged.signal();
+    } else if (packet.packet === PacketCode.TerminalInfo) {
+      this.setState({
+        id: packet.id,
+        label: packet.label,
+      });
     } else if (packet.packet === PacketCode.FileAction) {
       let { files, activeFile } = this.state;
       files = [...files];
