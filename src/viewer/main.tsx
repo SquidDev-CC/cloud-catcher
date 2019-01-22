@@ -173,7 +173,7 @@ export class Main extends Component<MainProps, MainState> {
 
   private openSettings = () => {
     const update = (s: Settings) => this.setState({ settings: s });
-    this.setState({ dialogue: s => <Settings settings={s.settings} update={update} /> });
+    this.setState({ dialogue: (s: MainState) => <Settings settings={s.settings} update={update} /> });
   }
 
   private closeDialogueClick = (e: MouseEvent) => {

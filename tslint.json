@@ -16,7 +16,6 @@
       "no-implicit-dependencies": [true, "dev"],
       "no-magic-numbers": false,
       "no-namespace": false,
-      "no-unused-variable": [true, "check-parameters", {"ignore-pattern": "^_"}],
       "object-literal-key-quotes": [true, "consistent-as-needed"],
       "object-literal-sort-keys": false,
       "ordered-imports": [

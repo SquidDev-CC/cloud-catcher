@@ -59,7 +59,7 @@ const connections = new Map<Token, Connection>();
 
 if (process.env.NODE_ENV === "production") {
   const contents404 = fs.readFileSync("public/404.html", { encoding: "utf-8" });
-  server.on("request", (_request: http.ServerRequest, response: http.ServerResponse) => {
+  server.on("request", (_request: http.IncomingMessage, response: http.ServerResponse) => {
     response.writeHead(404, { "Content-Type": "text/html" });
     response.end(contents404, "utf-8");
     return;

@@ -5,7 +5,7 @@ import { Settings } from "../settings";
 
 export type Model = {
   text: monaco.editor.ITextModel,
-  view?: monaco.editor.ICodeEditorViewState,
+  view: monaco.editor.ICodeEditorViewState | null,
 };
 
 export const createModel = (contents: string, mode?: string): Model => {
@@ -13,7 +13,7 @@ export const createModel = (contents: string, mode?: string): Model => {
   const text = monaco.editor.createModel(contents, mode);
   text.updateOptions({ trimAutoWhitespace: true });
   text.detectIndentation(true, 2);
-  return { text };
+  return { text, view: null };
 };
 
 export type EditorProps = {
@@ -35,7 +35,7 @@ export default class Editor extends Component<EditorProps, {}> {
   private editor?: monaco.editor.IStandaloneCodeEditor;
 
   public componentDidMount() {
-    this.editor = monaco.editor.create(this.base, {
+    this.editor = monaco.editor.create(this.base!, {
       roundedSelection: false,
       autoIndent: true,
     });

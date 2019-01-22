@@ -11,7 +11,7 @@ const mimeTypes: { [key: string]: string | undefined } = {
   ".jpg": "image/jpg",
 };
 
-export const handle = (dir: string) => (request: http.ServerRequest, response: http.ServerResponse) => {
+export const handle = (dir: string) => (request: http.IncomingMessage, response: http.ServerResponse) => {
   const requestUrl = url.parse(request.url || "");
   const filePath = path.join(dir, !requestUrl.pathname || requestUrl.pathname === "/"
     ? "index.html"

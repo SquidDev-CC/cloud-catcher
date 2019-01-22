@@ -68,10 +68,10 @@ export class Terminal extends Component<TerminalProps, {}> {
 
   public componentDidMount() {
     // Fetch the "key" elements
-    this.canvasElem = this.base.querySelector(".terminal-canvas") as HTMLCanvasElement;
+    this.canvasElem = this.base!.querySelector(".terminal-canvas") as HTMLCanvasElement;
     this.canvasContext = this.canvasElem.getContext("2d") as CanvasRenderingContext2D;
-    this.inputElem = this.base.querySelector(".terminal-input") as HTMLInputElement;
-    this.barElem = this.base.querySelector(".terminal-bar") as HTMLDivElement;
+    this.inputElem = this.base!.querySelector(".terminal-input") as HTMLInputElement;
+    this.barElem = this.base!.querySelector(".terminal-bar") as HTMLDivElement;
 
     // Subscribe to some events to allow us to shedule a redraw
     window.addEventListener("resize", this.onResized);
@@ -211,10 +211,10 @@ export class Terminal extends Component<TerminalProps, {}> {
     }
 
     // Prevent blur when up/down-scaling
-    (ctx as any).imageSmoothingEnabled = false; // Isn"t standardised so we have to cast.
-    ctx.oImageSmoothingEnabled = false;
-    ctx.webkitImageSmoothingEnabled = false;
-    ctx.mozImageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = false;
+    (ctx as any).oImageSmoothingEnabled = false;
+    (ctx as any).webkitImageSmoothingEnabled = false;
+    (ctx as any).mozImageSmoothingEnabled = false;
     (ctx as any).msImageSmoothingEnabled = false;
 
     // And render!
