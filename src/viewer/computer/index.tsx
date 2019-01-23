@@ -14,6 +14,7 @@ type FileInfo = {
   name: string,
   model: editor.Model,
   readOnly: boolean,
+  isNew: boolean,
 
   remoteChecksum: number,
   remoteContents: string,
@@ -160,13 +161,21 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         packet: PacketCode.FileAction,
         id: 0,
 
-        actions: [{
-          file: file.name,
-          checksum: file.remoteChecksum,
-          action: FileAction.Patch,
-          flags: 0,
-          delta: computeDiff(file.remoteContents, contents),
-        }],
+        actions: [
+          file.isNew ? {
+            file: file.name,
+            checksum: file.remoteChecksum,
+            action: FileAction.Replace,
+            flags: 0,
+            contents: contents,
+          } : {
+              file: file.name,
+              checksum: file.remoteChecksum,
+              action: FileAction.Patch,
+              flags: 0,
+              delta: computeDiff(file.remoteContents, contents),
+            }
+        ],
       }));
     };
   }
@@ -246,6 +255,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
               file = {
                 name, model,
                 readOnly: (flags & FileActionFlags.ReadOnly) !== 0,
+                isNew: (flags & FileActionFlags.New) !== 0,
 
                 remoteContents: actionEntry.contents,
                 remoteChecksum: fletcher32(actionEntry.contents),
@@ -263,6 +273,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
               file.model.text.setValue(actionEntry.contents);
               file.remoteContents = actionEntry.contents;
               file.remoteChecksum = checksum;
+              file.isNew = false;
 
               return { file: name, result: true };
             } else {

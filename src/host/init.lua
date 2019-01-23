@@ -138,18 +138,19 @@ do
       end
 
       -- We default to editing an empty string if the file doesn't exist
-      local contents
+      local contents, exists
       local handle = fs.open(file, "rb")
       if handle then
         contents = handle.readAll()
         handle.close()
+        exists = true
       else
         contents = ""
+        exists = false
       end
 
       -- We currently don't compress because I'm a wuss.
-      local encoded = contents
-      if #file + #encoded + 5 > max_packet_size then
+      if #file + #contents + 5 > max_packet_size then
         return false, "This file is too large to be edited remotely"
       end
 
@@ -157,6 +158,7 @@ do
 
       local flag = 0x04
       if fs.isReadOnly(file) then flag = flag + 0x01 end
+      if not exists then flag = flag + 0x08 end
 
       remote.send(json.stringify {
         packet = 0x22,

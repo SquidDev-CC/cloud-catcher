@@ -194,6 +194,7 @@ export type PacketFileReqeust = {
 // TODO: Add docs back
 export const enum FileActionFlags {
   ReadOnly = 0x1,
+  New = 0x8,
 
   Force = 0x2,
   Open = 0x4,
