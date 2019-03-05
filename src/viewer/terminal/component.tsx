@@ -342,15 +342,20 @@ export class Terminal extends Component<TerminalProps, {}> {
     const code = convertKey(event.code);
     if (!code || !this.canvasElem) return;
 
-    // Prevent the default action from occuring. This is a little
-    // overkill, but there you go.
-    event.preventDefault();
-
     // Handle pasting. Might be worth adding shift+insert support too.
     // Note this is needed as we block the main paste event.
     if (event.type === "keydown" && (event.ctrlKey && event.code === "KeyV")) {
-      this.paste((window as any).clipboardData);
+      const data = (window as any).clipboardData;
+      if (data) {
+        this.paste(data);
+        event.preventDefault();
+      }
+      return;
     }
+
+    // Prevent the default action from occuring. This is a little
+    // overkill, but there you go.
+    event.preventDefault();
 
     if (event.type === "keydown") {
       const events: Array<{ name: string, args: any[] }> = [{ name: "key", args: [code, event.repeat] }];
