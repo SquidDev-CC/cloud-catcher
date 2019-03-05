@@ -1,4 +1,4 @@
-import { diffChars } from "diff/lib/diff/character";
+import { diffChars } from "diff";
 
 export const enum FragmentKind {
   Same = 0,
