@@ -34,8 +34,9 @@ export class Notifications extends Component<NotificationsProps, {}> {
   private onClose = (event: MouseEvent) => {
     event.preventDefault();
 
-    if (!event.srcElement || !event.srcElement.parentElement) return;
-    const id = event.srcElement.parentElement.getAttribute("data-id");
+    const target = event.target as Element | null;
+    if (!target || !target.parentElement) return;
+    const id = target.getAttribute("data-id");
     if (id === null) return;
 
     this.props.onClose(id);

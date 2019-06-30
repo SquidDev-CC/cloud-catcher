@@ -10,21 +10,20 @@
   "license": "MIT",
   "dependencies": {
     "diff": "^4.0.1",
-    "esm": "^3.2.22",
-    "ws": "^6.2.1"
+    "esm": "^3.2.25",
+    "ws": "^7.0.1"
   },
   "devDependencies": {
     "@types/diff": "^4.0.2",
     "@types/ws": "^6.0.1",
-    "monaco-editor": "^0.16.2",
+    "monaco-editor": "^0.17.1",
     "preact": "^8.4.2",
-    "rollup": "^1.10.1",
-    "rollup-plugin-commonjs": "^9.3.4",
-    "rollup-plugin-node-resolve": "^4.2.3",
-    "tslint": "^5.16.0",
-    "typescript": "^3.4.5",
-    "uglify-es": "github:mishoo/UglifyJS2#harmony",
-    "uglifycss": "0.0.29",
-    "vscode-debugprotocol": "^1.34.0"
+    "rollup": "^1.16.3",
+    "rollup-plugin-commonjs": "^10.0.1",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "terser": "^4.0.1",
+    "tslint": "^5.18.0",
+    "typescript": "^3.5.2",
+    "uglifycss": "0.0.29"
   }
 }

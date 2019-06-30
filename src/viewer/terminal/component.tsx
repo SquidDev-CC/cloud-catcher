@@ -107,7 +107,8 @@ export class Terminal extends Component<TerminalProps, {}> {
       {...this.vdom}
       <div class="terminal-bar">
         {labelElement(id, label)}
-        <button type="none" class="action-button terminal-terminate" title="Send a `terminate' event to the computer." onClick={this.onTerminate}>
+        <button type="none" class="action-button terminal-terminate"
+          title="Send a `terminate' event to the computer." onClick={this.onTerminate}>
           <NoEntry />
         </button>
       </div>

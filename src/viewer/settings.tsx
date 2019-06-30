@@ -20,7 +20,7 @@ export type SettingsProperties = {
 
 export const Settings = ({ settings, update }: SettingsProperties): JSX.Element => {
   function updateWith<K extends keyof Settings>(changes: Pick<Settings, K>) {
-    update(Object.assign({}, settings, changes));
+    update({ ...settings, ...changes });
   }
 
   return <div class="settings-box dialogue-box">

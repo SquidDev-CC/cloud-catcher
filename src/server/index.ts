@@ -4,7 +4,10 @@ import * as process from "process";
 import * as url from "url";
 import * as WebSocket from "ws";
 import { HTTPCodes, WebsocketCodes } from "../codes";
-import { Capability, MAX_PACKET_SIZE, PacketCode, allowedFrom, checkCapability, decodePacket, encodePacket } from "../network";
+import {
+  Capability, MAX_PACKET_SIZE, PacketCode, allowedFrom, checkCapability,
+  decodePacket, encodePacket,
+} from "../network";
 import { Token, checkToken } from "../token";
 import { handle } from "./static";
 
@@ -37,7 +40,7 @@ const sendCallback = (err?: Error) => {
  */
 const connectionUpdate = (connection: Connection) => {
   for (const [_, client] of connection.clients) {
-    const caps = new Set();
+    const caps = new Set<Capability>();
 
     // Build a union of other sets
     for (const [_, other] of connection.clients) {

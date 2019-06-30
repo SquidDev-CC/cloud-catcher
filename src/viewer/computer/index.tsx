@@ -70,7 +70,10 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     this.props.events.detach(this.onPacket);
   }
 
-  public render({ connection, token, settings, focused }: ComputerProps, { activeFile, files, notifications, terminal, terminalChanged, id, label }: ComputerState) {
+  public render(
+    { connection, token, settings, focused }: ComputerProps,
+    { activeFile, files, notifications, terminal, terminalChanged, id, label }: ComputerState,
+  ) {
     const fileList = files.map(x => {
       const fileClasses = "file-entry" + (x.name === activeFile ? " active" : "");
       const iconClasses = "file-icon"
@@ -98,7 +101,8 @@ export class Computer extends Component<ComputerProps, ComputerState> {
           <div class={computerClasses} onClick={this.createSelectFile(null)}>
             <div class="file-name">Remote files</div>
             <div class="file-info">
-              <a href={target} title="Get a shareable link of this session token" onClick={this.onClickToken}>{token}</a>
+              <a href={target} title="Get a shareable link of this session token"
+                onClick={this.onClickToken}>{token}</a>
             </div>
           </div>
           {fileList}
@@ -167,14 +171,14 @@ export class Computer extends Component<ComputerProps, ComputerState> {
             checksum: file.remoteChecksum,
             action: FileAction.Replace,
             flags: 0,
-            contents: contents,
+            contents,
           } : {
               file: file.name,
               checksum: file.remoteChecksum,
               action: FileAction.Patch,
               flags: 0,
               delta: computeDiff(file.remoteContents, contents),
-            }
+            },
         ],
       }));
     };
@@ -348,7 +352,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
    */
   private setFileState<K extends keyof FileInfo>(file: FileInfo, props: Pick<FileInfo, K>) {
     this.setState({
-      files: this.state.files.map(x => x !== file ? x : Object.assign({}, x, props)),
+      files: this.state.files.map(x => x !== file ? x : { ...x, ...props }),
     });
   }
 

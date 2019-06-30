@@ -16,7 +16,8 @@ const githubLink =
   <div class="info-description">
     <p>
       Think you've found a bug? Have a suggestion? Why not put it
-      on <a href="https://github.com/SquidDev-CC/cloud-catcher" title="CloudCatcher's GitHub repository">the GitHub repo</a>?
+      on <a href="https://github.com/SquidDev-CC/cloud-catcher"
+        title="CloudCatcher's GitHub repository">the GitHub repo</a>?
     </p>
   </div>;
 
