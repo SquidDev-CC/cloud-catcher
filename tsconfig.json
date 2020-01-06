@@ -12,6 +12,7 @@
     "paths": {
       "diff/*": [ "./node_modules/@types/diff/index.d.ts" ]
     },
+    "types": [],
 
     "forceConsistentCasingInFileNames":true,
     "strict": true,

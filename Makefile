@@ -34,8 +34,8 @@ dist: package.json package-lock.json build public/index.html public/404.html pub
 	cp public/assets/term_font.png dist/public/assets
 	cp public/assets/term_font_hd.png dist/public/assets
 	uglifycss public/assets/main.css > dist/public/assets/main.css
-	uglifyjs public/assets/main.js > dist/public/assets/main.js
-	uglifyjs public/assets/monaco-worker.js > dist/public/assets/monaco-worker.js
+	terser public/assets/main.js > dist/public/assets/main.js
+	terser public/assets/monaco-worker.js > dist/public/assets/monaco-worker.js
 
 lint: $(TS) tsconfig.json tslint.json
 	tslint --project tsconfig.json

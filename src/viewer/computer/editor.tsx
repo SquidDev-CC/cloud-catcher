@@ -39,7 +39,7 @@ export default class Editor extends Component<EditorProps, {}> {
 
     this.editor = monaco.editor.create(this.base!, {
       roundedSelection: false,
-      autoIndent: "full",
+      autoIndent: true,
     });
 
     this.editor.addAction({
