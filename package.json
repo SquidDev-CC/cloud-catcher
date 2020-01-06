@@ -1,5 +1,5 @@
 {
-  "name": "cloud-trap",
+  "name": "cloud-catcher",
   "version": "1.0.0",
   "description": "A ComputerCraft terminal renderer on the web",
   "main": "src/index.js",
@@ -11,19 +11,23 @@
   "dependencies": {
     "diff": "^4.0.1",
     "esm": "^3.2.25",
-    "ws": "^7.0.1"
+    "ws": "^7.2.1"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^11.0.1",
+    "@rollup/plugin-node-resolve": "^6.1.0",
     "@types/diff": "^4.0.2",
-    "@types/ws": "^6.0.1",
-    "monaco-editor": "^0.17.1",
-    "preact": "^8.4.2",
-    "rollup": "^1.16.3",
-    "rollup-plugin-commonjs": "^10.0.1",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "terser": "^4.0.1",
-    "tslint": "^5.18.0",
-    "typescript": "^3.5.2",
+    "@types/ws": "^6.0.4",
+    "monaco-editor": "^0.19.0",
+    "preact": "^8.5.3",
+    "rollup": "^1.28.0",
+    "terser": "^4.5.1",
+    "tslint": "^5.20.1",
+    "typescript": "^3.7.4",
     "uglifycss": "0.0.29"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.1",
+    "utf-8-validate": "^5.0.2"
   }
 }

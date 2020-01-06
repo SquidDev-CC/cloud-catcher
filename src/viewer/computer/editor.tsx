@@ -35,9 +35,11 @@ export default class Editor extends Component<EditorProps, {}> {
   private editor?: monaco.editor.IStandaloneCodeEditor;
 
   public componentDidMount() {
+    window.addEventListener("resize", this.onResize);
+
     this.editor = monaco.editor.create(this.base!, {
       roundedSelection: false,
-      autoIndent: true,
+      autoIndent: "full",
     });
 
     this.editor.addAction({
@@ -60,16 +62,16 @@ export default class Editor extends Component<EditorProps, {}> {
   }
 
   public componentWillUnmount() {
-    if (this.editor) {
-      // Save the view state back to the model
-      if (this.props.model) {
-        this.props.model.view = this.editor.saveViewState();
-      }
+    window.removeEventListener("resize", this.onResize);
 
-      // We set a new session to prevent destroying it when losing the editor
-      /* this.editor.setSession(new ace.EditSession("")); */
-      this.editor.dispose();
+    if (!this.editor) return;
+    // Save the view state back to the model
+    if (this.props.model) {
+      this.props.model.view = this.editor.saveViewState();
     }
+
+    // We set a new session to prevent destroying it when losing the editor
+    this.editor.dispose();
   }
 
   public componentWillUpdate() {
@@ -106,4 +108,9 @@ export default class Editor extends Component<EditorProps, {}> {
   public render() {
     return <div class="editor-view"></div>;
   }
+
+  /**
+   * When the window resizes, we also need to update the editor's dimensions.
+   */
+  private onResize = () => this.editor?.layout();
 }

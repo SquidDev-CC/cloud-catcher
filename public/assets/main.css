@@ -23,7 +23,7 @@ pre { padding: 10px; }
 .tiny-text {
   font-weight: 200;
   font-size: 0.8em;
-  colour: #aaa;
+  color: #aaa;
 }
 
 .action-button {
@@ -133,6 +133,7 @@ pre { padding: 10px; }
 .terminal-view, .editor-view {
   flex-grow: 1;
   flex-shrink: 1;
+  overflow: hidden;
 }
 
 .file-list {
