@@ -1,4 +1,7 @@
-import { Component, h } from "preact";
+import { Component, JSX, h } from "preact";
+import {
+  notification, notification_close, notification_content, notification_kind, notifications as notifications_cls,
+} from "../styles.css";
 
 export const enum NotificationKind {
   Ok = "ok",
@@ -22,13 +25,14 @@ export type NotificationsProps = {
 export class Notifications extends Component<NotificationsProps, {}> {
   public render({ notifications }: NotificationsProps, { }: {}) {
     const elems = notifications.map(x =>
-      <div data-id={x.id} class={"notification notification-" + x.kind}>
-        <div class="notification-kind"><span></span></div>
-        <div class="notification-content">{x.message}</div>
-        <div class="notification-close" onClick={this.onClose}><span></span></div>
+      // TODO: This!
+      <div data-id={x.id} class={`${notification} notification-${x.kind}`}>
+        <div class={notification_kind}><span></span></div>
+        <div class={notification_content}>{x.message}</div>
+        <div class={notification_close} onClick={this.onClose}><span></span></div>
       </div>);
 
-    return <div class="notifications">{elems}</div>;
+    return <div class={notifications_cls}>{elems}</div>;
   }
 
   private onClose = (event: MouseEvent) => {

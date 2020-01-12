@@ -4,7 +4,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
-html, body, .container {
+html, body, .container, :global(.container) {
   min-height: 100vh;
   height: 100%;
   width: 100%;
@@ -26,33 +26,14 @@ pre { padding: 10px; }
   color: #aaa;
 }
 
-.action-button {
-  background: none;
-  color: inherit;
-
-  border: none;
-  padding: 0;
-  margin: 0;
-
-  font-size: 1em;
-  font-family: inherit;
-  line-height: inherit;
-  cursor: pointer;
-}
-
-.icon-font {
-  width: 1em;
-  height: 1em;
-}
-
-.info-container {
+.info-container, :global(.info-container) {
   position: relative;
   top: 80px;
   margin: 0px auto;
   max-width: 800px;
 }
 
-.info-view, .info-description {
+.info-view, .info-description, :global(.info-view) {
   padding: 5px 10px;
 }
 
@@ -70,53 +51,6 @@ pre { padding: 10px; }
 
 .term-line:before {
   content: "> ";
-}
-
-.terminal-view {
-  /* To ensure .clientWidth does not grow beyond the screen */
-  overflow-x: hidden;
-}
-
-.terminal-canvas {
-  image-rendering: optimizeSpeed;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: -o-crisp-edges;
-  image-rendering: optimize-contrast;
-  -ms-interpolation-mode: nearest-neighbor;
-
-  display: block;
-  margin: 30px auto 0px auto;
-}
-
-.terminal-bar {
-  margin: 0px auto;
-  background: #eee;
-  font-size: 0.8em;
-}
-
-.terminal-info, .terminal-terminate {
-  padding: 3px;
-  display: inline-block;
-}
-
-.terminal-info-label {
-  color: #444;
-  font-weight: 600;
-}
-
-.terminal-terminate {
-  float: right;
-}
-
-.terminal-terminate:hover {
-  background: #ddd;
-}
-
-.terminal-input {
-  position: absolute;
-  left: -1000px;
-  top: -1000px;
 }
 
 .computer-view {

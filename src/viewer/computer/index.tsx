@@ -1,3 +1,4 @@
+import { IComputerActionable, LuaValue, Terminal, TerminalData } from "cc-web-term";
 import { Component, h } from "preact";
 import { computeDiff } from "../../diff";
 import { FileAction, FileActionFlags, FileConsume, PacketCode, encodePacket } from "../../network";
@@ -5,27 +6,33 @@ import { Token } from "../../token";
 import { BufferingEventQueue, PacketEvent, Semaphore } from "../event";
 import { fletcher32 } from "../packet";
 import { Settings } from "../settings";
-import { Terminal } from "../terminal/component";
-import { TerminalData } from "../terminal/data";
+import {
+  active, computer_split, computer_view, file_computer, file_entry, file_icon, file_icon_modified, file_icon_readonly,
+  file_info, file_list, file_name, terminal_view,
+} from "../styles.css";
 import Editor, * as editor from "./editor";
 import { Notification, NotificationBody, NotificationKind, Notifications } from "./notifications";
 
 type FileInfo = {
   name: string,
-  model: editor.Model,
+  model: editor.LazyModel,
   readOnly: boolean,
   isNew: boolean,
 
   remoteChecksum: number,
   remoteContents: string,
 
-  updateContents?: string,
-  updateChecksum?: number,
-  updateMark?: number,
-
-  savedVersionId: number,
+  savedVersionId?: number,
   modified: boolean,
-};
+} & ({
+  updateContents: undefined,
+  updateChecksum: undefined,
+  updateMark: undefined,
+} | {
+  updateContents: string,
+  updateChecksum: number,
+  updateMark?: number,
+});
 
 export type ComputerProps = {
   connection: WebSocket,
@@ -43,21 +50,21 @@ type ComputerState = {
   terminal: TerminalData,
   terminalChanged: Semaphore,
 
-  id?: number,
-  label?: string,
+  id: number | null,
+  label: string | null,
 };
 
-export class Computer extends Component<ComputerProps, ComputerState> {
+export class Computer extends Component<ComputerProps, ComputerState> implements IComputerActionable {
   public constructor(props: ComputerProps, context: any) {
     super(props, context);
 
-    this.state = {
+    this.setState({
       activeFile: null,
       files: [],
       notifications: [],
       terminal: new TerminalData(),
       terminalChanged: new Semaphore(),
-    };
+    });
   }
 
   public componentDidMount() {
@@ -71,14 +78,15 @@ export class Computer extends Component<ComputerProps, ComputerState> {
   }
 
   public render(
-    { connection, token, settings, focused }: ComputerProps,
+    { token, settings, focused }: ComputerProps,
     { activeFile, files, notifications, terminal, terminalChanged, id, label }: ComputerState,
   ) {
     const fileList = files.map(x => {
-      const fileClasses = "file-entry" + (x.name === activeFile ? " active" : "");
-      const iconClasses = "file-icon"
-        + (x.modified ? " file-icon-modified" : "")
-        + (x.readOnly ? " file-icon-readonly" : "");
+      // TODO: Too lazy to do this right now
+      const fileClasses = file_entry + " " + (x.name === activeFile ? active : "");
+      const iconClasses = file_icon
+        + " " + (x.modified ? file_icon_modified : "")
+        + " " + (x.readOnly ? file_icon_readonly : "");
       const iconLabels = "Close editor" + (x.readOnly ? " (read only)" : "");
 
       let name = x.name;
@@ -86,21 +94,21 @@ export class Computer extends Component<ComputerProps, ComputerState> {
       const sepIndex = name.lastIndexOf("/");
       return <div key={x.name} class={fileClasses} onClick={this.createSelectFile(x.name)}>
         <div class={iconClasses} title={iconLabels} onClick={this.createClose(x.name)}></div>
-        <div class="file-name">{name.substr(sepIndex + 1)}</div>
-        <div class="file-info">{name.substr(0, sepIndex + 1)}</div>
+        <div class={file_name}>{name.substr(sepIndex + 1)}</div>
+        <div class={file_info}>{name.substr(0, sepIndex + 1)}</div>
       </div>;
     });
 
-    const computerClasses = "file-entry file-computer" + (activeFile === null ? " active" : "");
+    const computerClasses = `${file_entry} ${file_computer} ${activeFile === null ? active : ""}`;
     const target = `${window.location.origin}/?id=${this.props.token}`;
     const activeInfo = activeFile === null ? null : files.find(x => x.name === activeFile);
-    return <div class="computer-view">
+    return <div class={computer_view}>
       <Notifications notifications={notifications} onClose={this.onCloseNotification} />
-      <div class="computer-split">
-        <div class="file-list">
+      <div class={computer_split}>
+        <div class={file_list}>
           <div class={computerClasses} onClick={this.createSelectFile(null)}>
-            <div class="file-name">Remote files</div>
-            <div class="file-info">
+            <div class={file_name}>Remote files</div>
+            <div class={file_info}>
               <a href={target} title="Get a shareable link of this session token"
                 onClick={this.onClickToken}>{token}</a>
             </div>
@@ -108,8 +116,10 @@ export class Computer extends Component<ComputerProps, ComputerState> {
           {fileList}
         </div>
         {activeInfo == null || activeFile == null
-          ? <Terminal terminal={terminal} changed={terminalChanged} connection={connection} focused={focused}
-            font={settings.terminalFont} id={id} label={label} />
+          ? <div class={terminal_view}>
+            <Terminal computer={this} terminal={terminal} changed={terminalChanged} focused={focused}
+              font={settings.terminalFont} on={true} id={id} label={label} />
+          </div>
           : <Editor model={activeInfo.model} readOnly={activeInfo.readOnly} settings={settings} focused={focused}
             onChanged={this.createChanged(activeFile)}
             doSave={this.createSave(activeFile)} doClose={this.createClose(activeFile)} />}
@@ -137,7 +147,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
         files: this.state.files.filter(x => x.name !== fileName),
         activeFile: this.state.activeFile === fileName ? null : this.state.activeFile,
       }, () => {
-        if (file) file.model.text.dispose();
+        if (file) editor.disposeModel(file.model);
       });
     };
   }
@@ -157,7 +167,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
 
       // So technically we should update the state, but I'm just mutating
       // for now as it doesn't change how things are displayed. I'm sorry.
-      file.updateMark = file.model.text.getAlternativeVersionId();
+      file.updateMark = editor.getVersion(file.model);
       file.updateChecksum = fletcher32(contents);
       file.updateContents = contents;
 
@@ -245,15 +255,15 @@ export class Computer extends Component<ComputerProps, ComputerState> {
             if (!file) {
               // We're seeing the file for the first time, so create a model and
               // everything.
-              const model = editor.createModel(actionEntry.contents, "luax");
+              const model = editor.createModel(actionEntry.contents, name, text => {
+                // Setup some event listeners for this model
+                text.onDidChangeContent(() => {
+                  const file = this.state.files.find(x => x.name === name);
+                  if (!file) return;
 
-              // Setup some event listeners for this model
-              model.text.onDidChangeContent(() => {
-                const file = this.state.files.find(x => x.name === name);
-                if (!file) return;
-
-                const modified = model.text.getAlternativeVersionId() !== file.savedVersionId;
-                if (modified !== file.modified) this.setFileState(file, { modified });
+                  const modified = text.getAlternativeVersionId() !== file.savedVersionId;
+                  if (modified !== file.modified) this.setFileState(file, { modified });
+                });
               });
 
               file = {
@@ -264,8 +274,10 @@ export class Computer extends Component<ComputerProps, ComputerState> {
                 remoteContents: actionEntry.contents,
                 remoteChecksum: fletcher32(actionEntry.contents),
 
+                updateChecksum: undefined, updateContents: undefined, updateMark: undefined,
+
                 modified: false,
-                savedVersionId: model.text.getAlternativeVersionId(),
+                savedVersionId: editor.getVersion(model),
               };
 
               files.push(file);
@@ -274,7 +286,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
 
             } else if (file.remoteChecksum === checksum || (flags & FileActionFlags.Force)) {
               // The remote checksum matches our current one, so update our model.
-              file.model.text.setValue(actionEntry.contents);
+              editor.setContents(file.model, actionEntry.contents);
               file.remoteContents = actionEntry.contents;
               file.remoteChecksum = checksum;
               file.isNew = false;
@@ -310,7 +322,7 @@ export class Computer extends Component<ComputerProps, ComputerState> {
               if (file.updateChecksum === checksum) {
                 this.setFileState(file, {
                   savedVersionId: file.updateMark!,
-                  modified: file.model.text.getAlternativeVersionId() !== file.updateMark,
+                  modified: editor.getVersion(file.model) !== file.updateMark,
 
                   remoteChecksum: file.updateChecksum,
                   remoteContents: file.updateContents!,
@@ -383,5 +395,24 @@ export class Computer extends Component<ComputerProps, ComputerState> {
     this.setState({
       notifications: this.state.notifications.filter(x => x.id !== id),
     });
+  }
+
+  public queueEvent(name: string, args: LuaValue[]): void {
+    this.props.connection.send(encodePacket({
+      packet: PacketCode.TerminalEvents,
+      events: [{ name, args }],
+    }));
+  }
+
+  public turnOn(): void {
+    console.warn("Turning on does nothing");
+  }
+
+  public shutdown(): void {
+    console.warn("Shutdown does nothing");
+  }
+
+  public reboot(): void {
+    console.warn("Reboot does nothing");
   }
 }

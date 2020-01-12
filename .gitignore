@@ -1,5 +1,4 @@
-/dist
 /build
+/dist
+/src/viewer/styles.css.d.ts
 /node_modules
-/public/assets/main.js
-/public/cloud.lua

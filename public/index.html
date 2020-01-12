@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Cloud Catcher</title>
-    <link rel="stylesheet" href="/assets/main.css?v=CSS_VERSION" />
+    <link rel="stylesheet" href="/index.css?v={{version}}" />
   </head>
   <body>
     <div id="page" class="container">
@@ -19,20 +19,6 @@
       </div>
     </div>
 
-    <script>
-      var require = { paths: { "vs": "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.18.1/min/vs/" } };
-      window.MonacoEnvironment = {
-        getWorkerUrl: function(workerId, label) {
-          return "assets/monaco-worker.js?v=JS_VERSION"
-        }
-      };
-    </script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.18.1/min/vs/loader.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.18.1/min/vs/editor/editor.main.nls.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.18.1/min/vs/editor/editor.main.js"></script>
-    <script type="text/javascript" src="assets/main.js?v=JS_VERSION"></script>
-    <script type="text/javascript">
-      require(["vs/editor/editor.main", "cloud-catcher"], function(_, start) { start (); });
-    </script>
+    <script type="text/javascript" data-main="loader.js?v={{version}}" src="require.js?v={{version}}"></script>
   </body>
 </html>

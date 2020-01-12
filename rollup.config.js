@@ -1,25 +1,46 @@
 import commonjs from "@rollup/plugin-commonjs";
+import license from "rollup-plugin-license"
+import postcss from 'rollup-plugin-postcss';
 import resolve from "@rollup/plugin-node-resolve";
+import url from '@rollup/plugin-url';
 
 export default {
-  input: 'build/viewer/index.js',
+  input: 'build/typescript/viewer/index.js',
   output: {
-    file: 'public/assets/main.js',
+    dir: 'build/rollup/',
     format: 'amd',
-    amd: {
-      id: "cloud-catcher",
-    },
     paths: {
-      // So ideally we could map to editor.main, but that doesn't export
-      // anything, so we depend on the two in our index (as <script> tags and as requires).
-      "monaco-editor": "vs/editor/editor.api",
+      "monaco-editor": "vs/editor/editor.main",
     },
+    preferConst: true,
   },
+  context: "window",
+  external: ["monaco-editor"],
+
   plugins: [
-    resolve(),
-    commonjs({
-      include: 'node_modules/**'
+    postcss({
+      extract: true,
+      namedExports: name => name.replace(/-/g, '_'),
+      modules: true,
+    }),
+    url({
+      limit: 1024,
+      fileName: '[name]-[hash][extname]',
+      include: ['**/*.worker.js', '**/*.png'],
+    }),
+
+    resolve({ mainFields: ['module', 'browser', 'main'], }),
+    commonjs(),
+
+    license({
+      banner:
+        `<%= pkg.name %>: Copyright <%= pkg.author %> <%= moment().format('YYYY') %>
+<% _.forEach(_.sortBy(dependencies, ["name"]), ({ name, author, license }) => { %>
+  - <%= name %>: Copyright <%= author ? author.name : "" %> (<%= license %>)<% }) %>
+
+@license
+  `,
+      thirdParty: { output: "build/rollup/dependencies.txt" },
     }),
   ],
-  external: ["monaco-editor"],
 };

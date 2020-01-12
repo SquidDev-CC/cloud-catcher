@@ -1,4 +1,5 @@
-import { Component, h } from "preact";
+import { Styles } from "cc-web-term";
+import { Component, JSX, h } from "preact";
 import { WebsocketCodes } from "../codes";
 import { Capability, PacketCode, decodePacket, encodePacket } from "../network";
 import { Token } from "../token";
@@ -7,6 +8,8 @@ import { BufferingEventQueue, PacketEvent } from "./event";
 import { Cog } from "./font";
 import { LostConnection, TokenDisplay, UnknownError } from "./screens";
 import { Settings } from "./settings";
+import { container, dialogue_overlay, settings_cog } from "./styles.css";
+import term_font from "cc-web-term/assets/term_font.png";
 
 export type MainProps = {
   token: Token;
@@ -38,7 +41,7 @@ export class Main extends Component<MainProps, MainState> {
       showInvisible: true,
       trimWhitespace: true,
 
-      terminalFont: "assets/term_font.png",
+      terminalFont: term_font,
 
       darkMode: false,
       terminalBorder: false,
@@ -58,14 +61,14 @@ export class Main extends Component<MainProps, MainState> {
       // Ignore
     }
 
-    this.state = {
+    this.setState({
       websocket: socket,
       events,
       settings,
 
       hadConnected: false,
       currentVDom: () => <TokenDisplay token={token} />,
-    };
+    });
 
     socket.addEventListener("error", event => {
       if (socket.readyState <= WebSocket.OPEN) socket.close(400);
@@ -157,14 +160,16 @@ export class Main extends Component<MainProps, MainState> {
   }
 
   public render(_props: MainProps, state: MainState) {
-    return <div class="container">
+    return <div class={container}>
       {state.currentVDom(state)}
-      <button class="action-button settings-cog" title="Configure how CloudCatcher behaves" onClick={this.openSettings}>
+      <button class={`${Styles.action_button} ${settings_cog}`}
+        title="Configure how CloudCatcher behaves"
+        onClick={this.openSettings}>
         <Cog />
       </button>
       {
         state.dialogue ?
-          <div class="dialogue-overlay" onClick={this.closeDialogueClick}>
+          <div class={dialogue_overlay} onClick={this.closeDialogueClick}>
             {state.dialogue(state)}
           </div> : ""
       }

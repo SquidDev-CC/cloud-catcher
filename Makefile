@@ -1,58 +1,39 @@
 export PATH := $(shell npm bin):$(PATH)
 
-TS := $(shell find src -type f \( -name '*.ts' -or -name '*.tsx' \) )
-LUA := $(shell find src -type f -name '*.lua')
-BUILD_TS := $(TS:src/%=build/%)
+SRC := $(shell find src public -type f)
 
 SERVER ?= "cloud-catcher.squiddev.cc"
 
-.PHONEY: lint serve all clean
+.PHONEY: serve all clean
 
-all: public/assets/main.js build
+all: build
 
 clean:
-	rm -rf build dist public/cloud.lua public/assets/main.js
+	rm -rf build dist
 
-dist: package.json package-lock.json build public/index.html public/404.html public/assets/main.css public/assets/main.js public/assets/monaco-worker.js public/assets/term_font.png public/assets/term_font_hd.png public/cloud.lua
+build: package.json package-lock.json rollup.config.js $(SRC)
+	npm run prepare
+	touch build
+
+dist: build
 	rm -rf dist
 	mkdir dist
 	cp package.json package-lock.json dist
 
 	mkdir dist/build
-	cp -r build/*.js build/server dist/build
+	cp -r build/typescript/*.js build/typescript/server dist/build
 
 	mkdir -p dist/public
+	cp build/rollup/* dist/public
 
-	cp public/index.html dist/public
-	cp public/404.html dist/public
-	cp public/cloud.lua dist/public
+	sed -i -e "s/{{version}}/$$(sha1sum "public/assets/main.css" | cut -c-10)/g" dist/public/*
 
-	sed -i -e "s/CSS_VERSION/$$(sha1sum "public/assets/main.css" | cut -c-10)/g" dist/public/*.html
-	sed -i -e "s/JS_VERSION/$$(sha1sum "public/assets/main.js" | cut -c-10)/g" dist/public/*.html
+	for file in dist/public/*.js; do terser "$$file" --output "$$file"; done
+	for file in dist/public/*.css; do uglifycss "$$file" --output "$$file"; done
 
-	mkdir -p dist/public/assets
-	cp public/assets/term_font.png dist/public/assets
-	cp public/assets/term_font_hd.png dist/public/assets
-	uglifycss public/assets/main.css > dist/public/assets/main.css
-	terser public/assets/main.js > dist/public/assets/main.js
-	terser public/assets/monaco-worker.js > dist/public/assets/monaco-worker.js
-
-lint: $(TS) tsconfig.json tslint.json
-	tslint --project tsconfig.json
-
-build: $(TS) tsconfig.json
-	tsc --project tsconfig.json
-	touch build
-
-public/assets/main.js: build
-	rollup -c
-
-public/cloud.lua: $(LUA)
-	cd src/host; \
-	lua _make.lua ../../public/cloud.lua "$(SERVER)"
-
-serve: build public/cloud.lua
-	tsc --project tsconfig.json --watch & \
+serve:
+	npm run prepare
+	tsc --project . --watch & \
 	rollup -c --watch & \
 	node -r esm build/server & \
 	wait

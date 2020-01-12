@@ -1,18 +1,14 @@
 {
   "compilerOptions": {
-    "module": "es6",
+    "module": "ESNext",
     "moduleResolution": "node",
     "target": "es6",
     "lib": ["es2015", "dom" ],
     "jsx": "react",
     "jsxFactory": "h",
     "newLine": "LF",
-    "outDir": "build",
+    "outDir": "build/typescript",
     "baseUrl": ".",
-    "paths": {
-      "diff/*": [ "./node_modules/@types/diff/index.d.ts" ]
-    },
-    "types": [],
 
     "forceConsistentCasingInFileNames":true,
     "strict": true,
@@ -20,5 +16,6 @@
 
     "preserveWatchOutput": true
   },
-  "include": [ "src/**/*.ts", "src/**/*.tsx" ]
+
+  "include": [ "src" ]
 }

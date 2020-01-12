@@ -1,4 +1,5 @@
 import { Packet } from "../network";
+export { Semaphore } from "cc-web-term";
 
 export class BufferingEventQueue<T> {
   private readonly queue: T[] = [];
@@ -35,23 +36,6 @@ export class BufferingEventQueue<T> {
   /** Fire the event if listeners exist, discarding it if not */
   public offer(event: T) {
     for (const listener of this.listeners) listener(event);
-  }
-}
-
-export class Semaphore {
-  private readonly listeners: Array<() => void> = [];
-
-  public attach(listener: () => void) {
-    this.listeners.push(listener);
-  }
-
-  public detach(listener: () => void) {
-    const index = this.listeners.indexOf(listener);
-    if (index > -1) this.listeners.splice(index, 1);
-  }
-
-  public signal() {
-    for (const listener of this.listeners) listener();
   }
 }
 
