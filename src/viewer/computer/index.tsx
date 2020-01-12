@@ -234,8 +234,8 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
       terminalChanged.signal();
     } else if (packet.packet === PacketCode.TerminalInfo) {
       this.setState({
-        id: packet.id,
-        label: packet.label,
+        id: packet.id === undefined ? null : packet.id,
+        label: packet.label === undefined ? null : packet.label,
       });
     } else if (packet.packet === PacketCode.FileAction) {
       let { files, activeFile } = this.state;
