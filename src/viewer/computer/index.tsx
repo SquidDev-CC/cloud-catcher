@@ -58,13 +58,15 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
   public constructor(props: ComputerProps, context: any) {
     super(props, context);
 
-    this.setState({
+    const state: ComputerState = {
       activeFile: null,
       files: [],
       notifications: [],
       terminal: new TerminalData(),
       terminalChanged: new Semaphore(),
-    });
+      id: null, label: null,
+    };
+    this.setState(state);
   }
 
   public componentDidMount() {
