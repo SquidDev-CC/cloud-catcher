@@ -16,11 +16,11 @@
   "author": "SquidDev",
   "license": "MIT",
   "scripts": {
-    "prepare:setup": "node tools/setup.js",
-    "prepare:tsc": "tsc --project .",
-    "prepare:rollup": "rollup -c",
-    "prepare:lua": "lua tools/make.lua",
-    "prepare": "npm run prepare:setup && npm run prepare:tsc && npm run prepare:rollup && npm run prepare:lua",
+    "build:setup": "node tools/setup.js",
+    "build:tsc": "tsc --project .",
+    "build:rollup": "rollup -c",
+    "build:lua": "lua tools/make.lua",
+    "build": "npm run build:setup && npm run build:tsc && npm run build:rollup && npm run build:lua",
     "lint": "tslint --project .",
     "host": "node -r esm build/typescript/server"
   },

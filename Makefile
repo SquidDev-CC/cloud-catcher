@@ -12,7 +12,7 @@ clean:
 	rm -rf build dist
 
 build: package.json package-lock.json rollup.config.js $(SRC)
-	npm run prepare
+	npm run build
 	touch build
 
 dist: build
@@ -32,7 +32,7 @@ dist: build
 	for file in dist/public/*.css; do uglifycss "$$file" --output "$$file"; done
 
 serve:
-	npm run prepare
+	npm run build
 	tsc --project . --watch & \
 	rollup -c --watch & \
 	node -r esm build/server & \
