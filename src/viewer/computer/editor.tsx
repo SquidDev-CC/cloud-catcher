@@ -1,7 +1,7 @@
 import * as mTypes from "../../editor/lua";
 import { Component, h } from "preact";
 import { Settings } from "../settings";
-import { editor_view } from "../styles.css";
+import { editorView } from "../styles.css";
 
 let monaco: typeof mTypes | null = null;
 
@@ -194,7 +194,7 @@ export default class Editor extends Component<EditorProps, {}> {
   }
 
   public render() {
-    return <div class={editor_view}></div>;
+    return <div class={editorView}></div>;
   }
 
   /**

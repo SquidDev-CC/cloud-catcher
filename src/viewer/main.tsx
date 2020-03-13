@@ -8,7 +8,7 @@ import { BufferingEventQueue, PacketEvent } from "./event";
 import { Cog } from "./font";
 import { LostConnection, TokenDisplay, UnknownError } from "./screens";
 import { Settings } from "./settings";
-import { container, dialogue_overlay, settings_cog } from "./styles.css";
+import { container, dialogueOverlay, settingsCog } from "./styles.css";
 import term_font from "cc-web-term/assets/term_font.png";
 
 export type MainProps = {
@@ -162,14 +162,14 @@ export class Main extends Component<MainProps, MainState> {
   public render(_props: MainProps, state: MainState) {
     return <div class={container}>
       {state.currentVDom(state)}
-      <button class={`${Styles.action_button} ${settings_cog}`}
+      <button class={`${Styles.actionButton} ${settingsCog}`}
         title="Configure how CloudCatcher behaves"
         onClick={this.openSettings}>
         <Cog />
       </button>
       {
         state.dialogue ?
-          <div class={dialogue_overlay} onClick={this.closeDialogueClick}>
+          <div class={dialogueOverlay} onClick={this.closeDialogueClick}>
             {state.dialogue(state)}
           </div> : ""
       }

@@ -20,7 +20,7 @@ export default {
   plugins: [
     postcss({
       extract: true,
-      namedExports: name => name.replace(/-/g, '_'),
+      namedExports: name => name.replace(/-([a-z])/g, (_, x) => x.toUpperCase()),
       modules: true,
     }),
     url({

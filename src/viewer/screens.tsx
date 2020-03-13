@@ -1,6 +1,6 @@
 import { h } from "preact";
 import { Token } from "../token";
-import { error_view, info_container, info_description, info_view, term_line } from "./styles.css";
+import { errorView, infoContainer, infoDescription, infoView, termLine } from "./styles.css";
 
 export type TokenDisplayProps = {
   token: Token;
@@ -8,13 +8,13 @@ export type TokenDisplayProps = {
 
 const genSetup = (token: string) =>
   <pre>
-    <span class={term_line}>wget {window.location.origin}/cloud.lua cloud.lua</span>
+    <span class={termLine}>wget {window.location.origin}/cloud.lua cloud.lua</span>
     {"\n"}
-    <span class={term_line}>cloud.lua {token}</span>
+    <span class={termLine}>cloud.lua {token}</span>
   </pre>;
 
 const githubLink =
-  <div class={info_description}>
+  <div class={infoDescription}>
     <p>
       Think you've found a bug? Have a suggestion? Why not put it
       on <a href="https://github.com/SquidDev-CC/cloud-catcher"
@@ -23,12 +23,12 @@ const githubLink =
   </div>;
 
 export const TokenDisplay = ({ token }: TokenDisplayProps) =>
-  <div class={info_container}>
-    <div class={info_view}>
+  <div class={infoContainer}>
+    <div class={infoView}>
       <h2>Getting started</h2>
       {genSetup(token)}
     </div>
-    <div class={info_description}>
+    <div class={infoDescription}>
       <h3>What is Cloud Catcher?</h3>
       <p>
         Cloud Catcher is a web terminal for ComputerCraft, allowing you to
@@ -74,8 +74,8 @@ export type LostConnectionProps = {
 };
 
 export const LostConnection = ({ token }: LostConnectionProps) =>
-  <div class={info_container}>
-    <div class={info_view}>
+  <div class={infoContainer}>
+    <div class={infoView}>
       <h2>Connection Lost</h2>
       <p>We've lost our connection to this computer. Maybe try restarting the script:</p>
       {genSetup(token)}
@@ -88,8 +88,8 @@ export type UnknownErrorProps = {
 };
 
 export const UnknownError = ({ error }: UnknownErrorProps) =>
-  <div class={info_container}>
-    <div class={`${info_view} ${error_view}`}>
+  <div class={infoContainer}>
+    <div class={`${infoView} ${errorView}`}>
       <h2>An error occured</h2>
       <pre>{error}</pre>
     </div>

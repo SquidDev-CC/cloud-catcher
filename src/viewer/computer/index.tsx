@@ -1,4 +1,4 @@
-import { IComputerActionable, LuaValue, Terminal, TerminalData } from "cc-web-term";
+import { ComputerActionable, LuaValue, Terminal, TerminalData } from "cc-web-term";
 import { Component, h } from "preact";
 import { computeDiff } from "../../diff";
 import { FileAction, FileActionFlags, FileConsume, PacketCode, encodePacket } from "../../network";
@@ -7,8 +7,8 @@ import { BufferingEventQueue, PacketEvent, Semaphore } from "../event";
 import { fletcher32 } from "../packet";
 import { Settings } from "../settings";
 import {
-  active, computer_split, computer_view, file_computer, file_entry, file_icon, file_icon_modified, file_icon_readonly,
-  file_info, file_list, file_name, terminal_view,
+  active, computerSplit, computerView, fileComputer, fileEntry, fileIcon, fileIconModified, fileIconReadonly,
+  fileInfo, fileList as fileListCls, fileName, terminalView,
 } from "../styles.css";
 import Editor, * as editor from "./editor";
 import { Notification, NotificationBody, NotificationKind, Notifications } from "./notifications";
@@ -54,7 +54,7 @@ type ComputerState = {
   label: string | null,
 };
 
-export class Computer extends Component<ComputerProps, ComputerState> implements IComputerActionable {
+export class Computer extends Component<ComputerProps, ComputerState> implements ComputerActionable {
   public constructor(props: ComputerProps, context: any) {
     super(props, context);
 
@@ -85,10 +85,10 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
   ) {
     const fileList = files.map(x => {
       // TODO: Too lazy to do this right now
-      const fileClasses = file_entry + " " + (x.name === activeFile ? active : "");
-      const iconClasses = file_icon
-        + " " + (x.modified ? file_icon_modified : "")
-        + " " + (x.readOnly ? file_icon_readonly : "");
+      const fileClasses = fileEntry + " " + (x.name === activeFile ? active : "");
+      const iconClasses = fileIcon
+        + " " + (x.modified ? fileIconModified : "")
+        + " " + (x.readOnly ? fileIconReadonly : "");
       const iconLabels = "Close editor" + (x.readOnly ? " (read only)" : "");
 
       let name = x.name;
@@ -96,21 +96,21 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
       const sepIndex = name.lastIndexOf("/");
       return <div key={x.name} class={fileClasses} onClick={this.createSelectFile(x.name)}>
         <div class={iconClasses} title={iconLabels} onClick={this.createClose(x.name)}></div>
-        <div class={file_name}>{name.substr(sepIndex + 1)}</div>
-        <div class={file_info}>{name.substr(0, sepIndex + 1)}</div>
+        <div class={fileName}>{name.substr(sepIndex + 1)}</div>
+        <div class={fileInfo}>{name.substr(0, sepIndex + 1)}</div>
       </div>;
     });
 
-    const computerClasses = `${file_entry} ${file_computer} ${activeFile === null ? active : ""}`;
+    const computerClasses = `${fileEntry} ${fileComputer} ${activeFile === null ? active : ""}`;
     const target = `${window.location.origin}/?id=${this.props.token}`;
     const activeInfo = activeFile === null ? null : files.find(x => x.name === activeFile);
-    return <div class={computer_view}>
+    return <div class={computerView}>
       <Notifications notifications={notifications} onClose={this.onCloseNotification} />
-      <div class={computer_split}>
-        <div class={file_list}>
+      <div class={computerSplit}>
+        <div class={fileListCls}>
           <div class={computerClasses} onClick={this.createSelectFile(null)}>
-            <div class={file_name}>Remote files</div>
-            <div class={file_info}>
+            <div class={fileName}>Remote files</div>
+            <div class={fileInfo}>
               <a href={target} title="Get a shareable link of this session token"
                 onClick={this.onClickToken}>{token}</a>
             </div>
@@ -118,7 +118,7 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
           {fileList}
         </div>
         {activeInfo == null || activeFile == null
-          ? <div class={terminal_view}>
+          ? <div class={terminalView}>
             <Terminal computer={this} terminal={terminal} changed={terminalChanged} focused={focused}
               font={settings.terminalFont} on={true} id={id} label={label} />
           </div>
