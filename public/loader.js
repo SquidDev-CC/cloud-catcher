@@ -1,5 +1,5 @@
 (() => {
-  const monaco = "https://cdn.jsdelivr.net/npm/monaco-editor@0.19.2";
+  const monaco = "https://cdn.jsdelivr.net/npm/monaco-editor@0.20.0";
 
   requirejs.config({
     urlArgs: (_, url) => url.startsWith(monaco) || url.includes("-")
