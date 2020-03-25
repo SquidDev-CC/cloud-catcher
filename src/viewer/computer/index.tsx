@@ -1,4 +1,4 @@
-import { ComputerActionable, LuaValue, Terminal, TerminalData } from "cc-web-term";
+import { ComputerActionable, LuaValue, Terminal, TerminalData, KeyCode, keyName } from "cc-web-term";
 import { Component, h } from "preact";
 import { computeDiff } from "../../diff";
 import { FileAction, FileActionFlags, FileConsume, PacketCode, encodePacket } from "../../network";
@@ -404,6 +404,14 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
       packet: PacketCode.TerminalEvents,
       events: [{ name, args }],
     }));
+  }
+
+  public keyDown(key: KeyCode, repeat: boolean): void {
+    this.queueEvent("cloud_catcher_key", [keyName(key), repeat]);
+  }
+
+  public keyUp(key: KeyCode): void {
+    this.queueEvent("cloud_catcher_key_up", [keyName(key)]);
   }
 
   public turnOn(): void {

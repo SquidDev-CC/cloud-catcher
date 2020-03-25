@@ -9,6 +9,7 @@ const mimeTypes: { [key: string]: string | undefined } = {
   ".css": "text/css",
   ".png": "image/png",
   ".jpg": "image/jpg",
+  ".lua": "text/lua",
 };
 
 export const handle = (dir: string) => (request: http.IncomingMessage, response: http.ServerResponse) => {

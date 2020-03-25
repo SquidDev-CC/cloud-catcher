@@ -68,7 +68,7 @@ if (process.env.NODE_ENV === "production") {
     return;
   });
 } else {
-  server.on("request", handle("build/rollup"));
+  server.on("request", handle("dist/public"));
 }
 
 const wss = new WebSocket.Server({

@@ -26,7 +26,7 @@ dist: build
 	mkdir -p dist/public
 	cp build/rollup/* dist/public
 
-	sed -i -e "s/{{version}}/$$(sha1sum "public/assets/main.css" | cut -c-10)/g" dist/public/*
+	sed -i -e "s/{{version}}/$$(sha1sum "dist/public/index.css" | cut -c-10)/g" dist/public/*
 
 	for file in dist/public/*.js; do terser "$$file" --output "$$file"; done
 	for file in dist/public/*.css; do uglifycss "$$file" --output "$$file"; done
@@ -35,5 +35,5 @@ serve:
 	npm run build
 	tsc --project . --watch & \
 	rollup -c --watch & \
-	node -r esm build/server & \
+	node -r esm build/typescript/server & \
 	wait
