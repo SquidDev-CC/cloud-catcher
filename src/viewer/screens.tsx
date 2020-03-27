@@ -7,11 +7,17 @@ export type TokenDisplayProps = {
 };
 
 const genSetup = (token: string) =>
-  <pre>
-    <span class={termLine}>wget {window.location.origin}/cloud.lua cloud.lua</span>
-    {"\n"}
-    <span class={termLine}>cloud.lua {token}</span>
-  </pre>;
+  <div>
+    <pre>
+      <span class={termLine}>wget run {window.location.origin}/cloud.lua {token}</span>
+    </pre>
+    <p>or</p>
+    <pre>
+      <span class={termLine}>wget {window.location.origin}/cloud.lua</span>
+      {"\n"}
+      <span class={termLine}>cloud.lua {token}</span>
+    </pre>
+  </div>;
 
 const githubLink =
   <div class={infoDescription}>
