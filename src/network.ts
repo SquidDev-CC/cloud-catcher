@@ -1,4 +1,4 @@
-import { Fragment } from "./diff";
+import type { Fragment } from "./diff";
 
 /**
  * This represents the capabilities a client has. The server can be thought of a
@@ -126,7 +126,7 @@ export type PacketTerminalContents = {
   cursorX: number, cursorY: number, cursorBlink: boolean,
   curFore: string, curBack: string,
 
-  palette: { [colour: string]: number };
+  palette: { [colour: string]: number },
 
   text: string[],
   fore: string[],

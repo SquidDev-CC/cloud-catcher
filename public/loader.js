@@ -11,7 +11,7 @@
   });
 
   window.MonacoEnvironment = {
-    getWorkerUrl: (workerId, label) =>
+    getWorkerUrl: (_workerId, _label) =>
       `data:text/javascript;charset=utf-8,${encodeURIComponent(`
       self.MonacoEnvironment = {
         baseUrl: "${monaco}/min/"

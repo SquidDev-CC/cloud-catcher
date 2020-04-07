@@ -2,21 +2,21 @@ import { Styles } from "cc-web-term";
 import { Component, JSX, h } from "preact";
 import { WebsocketCodes } from "../codes";
 import { Capability, PacketCode, decodePacket, encodePacket } from "../network";
-import { Token } from "../token";
+import type { Token } from "../token";
 import { Computer } from "./computer";
 import { BufferingEventQueue, PacketEvent } from "./event";
 import { Cog } from "./font";
 import { LostConnection, TokenDisplay, UnknownError } from "./screens";
 import { Settings } from "./settings";
 import { container, dialogueOverlay, settingsCog } from "./styles.css";
-import term_font from "cc-web-term/assets/term_font.png";
+import termFont from "cc-web-term/assets/term_font.png";
 
 export type MainProps = {
-  token: Token;
+  token: Token,
 };
 
 type MainState = {
-  websocket: WebSocket;
+  websocket: WebSocket,
   events: BufferingEventQueue<PacketEvent>,
   settings: Settings,
 
@@ -41,7 +41,7 @@ export class Main extends Component<MainProps, MainState> {
       showInvisible: true,
       trimWhitespace: true,
 
-      terminalFont: term_font,
+      terminalFont: termFont,
 
       darkMode: false,
       terminalBorder: false,
@@ -72,7 +72,7 @@ export class Main extends Component<MainProps, MainState> {
 
     socket.addEventListener("error", event => {
       if (socket.readyState <= WebSocket.OPEN) socket.close(400);
-      console.log(event);
+      console.error(event);
 
       this.setState({ currentVDom: () => <UnknownError error={`${event}`} /> });
     });

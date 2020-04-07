@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import * as http from "http";
+import type * as http from "http";
 import * as path from "path";
 import * as url from "url";
 

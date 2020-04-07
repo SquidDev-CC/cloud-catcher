@@ -1,14 +1,14 @@
 import commonjs from "@rollup/plugin-commonjs";
-import license from "rollup-plugin-license"
-import postcss from 'rollup-plugin-postcss';
+import license from "rollup-plugin-license";
+import postcss from "rollup-plugin-postcss";
 import resolve from "@rollup/plugin-node-resolve";
-import url from '@rollup/plugin-url';
+import url from "@rollup/plugin-url";
 
 export default {
-  input: 'build/typescript/viewer/index.js',
+  input: "build/typescript/viewer/index.js",
   output: {
-    dir: 'build/rollup/',
-    format: 'amd',
+    dir: "build/rollup/",
+    format: "amd",
     paths: {
       "monaco-editor": "vs/editor/editor.main",
     },
@@ -25,11 +25,11 @@ export default {
     }),
     url({
       limit: 1024,
-      fileName: '[name]-[hash][extname]',
-      include: ['**/*.worker.js', '**/*.png'],
+      fileName: "[name]-[hash][extname]",
+      include: ["**/*.worker.js", "**/*.png"],
     }),
 
-    resolve({ mainFields: ['module', 'browser', 'main'], }),
+    resolve({ mainFields: ["module", "browser", "main"], }),
     commonjs(),
 
     license({

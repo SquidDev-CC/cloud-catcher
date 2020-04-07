@@ -1,4 +1,4 @@
-import { Packet } from "../network";
+import type { Packet } from "../network";
 export { Semaphore } from "cc-web-term";
 
 export class BufferingEventQueue<T> {

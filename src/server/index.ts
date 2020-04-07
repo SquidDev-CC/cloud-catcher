@@ -39,11 +39,11 @@ const sendCallback = (err?: Error) => {
  * Send a connection update packet to all clients
  */
 const connectionUpdate = (connection: Connection) => {
-  for (const [_, client] of connection.clients) {
+  for (const [, client] of connection.clients) {
     const caps = new Set<Capability>();
 
     // Build a union of other sets
-    for (const [_, other] of connection.clients) {
+    for (const [, other] of connection.clients) {
       if (other !== client) {
         for (const cap of other.capabilities) caps.add(cap);
       }
@@ -218,7 +218,7 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
           case PacketCode.FileListing:
           case PacketCode.FileRequest:
           case PacketCode.FileAction:
-          case PacketCode.FileConsume:
+          case PacketCode.FileConsume: {
             const id = packet.id;
             if (typeof id !== "number" || !Number.isInteger(id)) return;
 
@@ -250,6 +250,7 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
             }
 
             break;
+          }
         }
       });
 

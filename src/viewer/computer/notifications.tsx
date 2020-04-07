@@ -23,7 +23,7 @@ export type NotificationsProps = {
 };
 
 export class Notifications extends Component<NotificationsProps, {}> {
-  public render({ notifications }: NotificationsProps, { }: {}) {
+  public render({ notifications }: NotificationsProps) {
     const elems = notifications.map(x =>
       // TODO: This!
       <div data-id={x.id} class={`${notification} notification-${x.kind}`}>

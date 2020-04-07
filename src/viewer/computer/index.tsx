@@ -1,11 +1,11 @@
-import { ComputerActionable, LuaValue, Terminal, TerminalData, KeyCode, keyName } from "cc-web-term";
+import { ComputerActionable, KeyCode, LuaValue, Terminal, TerminalData, keyName } from "cc-web-term";
 import { Component, h } from "preact";
 import { computeDiff } from "../../diff";
 import { FileAction, FileActionFlags, FileConsume, PacketCode, encodePacket } from "../../network";
-import { Token } from "../../token";
+import type { Token } from "../../token";
 import { BufferingEventQueue, PacketEvent, Semaphore } from "../event";
 import { fletcher32 } from "../packet";
-import { Settings } from "../settings";
+import type { Settings } from "../settings";
 import {
   active, computerSplit, computerView, fileComputer, fileEntry, fileIcon, fileIconModified, fileIconReadonly,
   fileInfo, fileList as fileListCls, fileName, terminalView,
@@ -185,12 +185,12 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
             flags: 0,
             contents,
           } : {
-              file: file.name,
-              checksum: file.remoteChecksum,
-              action: FileAction.Patch,
-              flags: 0,
-              delta: computeDiff(file.remoteContents, contents),
-            },
+            file: file.name,
+            checksum: file.remoteChecksum,
+            action: FileAction.Patch,
+            flags: 0,
+            delta: computeDiff(file.remoteContents, contents),
+          },
         ],
       }));
     };
@@ -227,7 +227,7 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
       terminal.back = packet.back;
 
       for (const key in packet.palette) {
-        if (packet.palette.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(packet.palette, key)) {
           const colour = packet.palette[key];
           terminal.palette[key] = `rgb(${(colour >> 16) & 0xFF},${(colour >> 8) & 0xFF},${colour & 0xFF}`;
         }
@@ -243,7 +243,7 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
       let { files, activeFile } = this.state;
       files = [...files];
 
-      const results = packet.actions.map(actionEntry => {
+      packet.actions.map(actionEntry => {
         const { file: name, flags, checksum } = actionEntry;
         switch (actionEntry.action) {
           case FileAction.Delete:
@@ -377,17 +377,6 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
     const id = file.name + "\0" + category;
 
     const notifications = this.state.notifications.filter(x => x.id !== id);
-    notifications.push({ id, kind, message });
-    this.setState({ notifications });
-  }
-
-  /**
-   * Push a notification with for a file, replacing any other notfifications for this file
-   */
-  private replaceFileNotification(file: FileInfo, kind: NotificationKind, category: string, message: NotificationBody) {
-    const id = file.name + "\0" + category;
-
-    const notifications = this.state.notifications.filter(x => !x.id.startsWith(file.name + "\0"));
     notifications.push({ id, kind, message });
     this.setState({ notifications });
   }

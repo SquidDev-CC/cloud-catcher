@@ -1,7 +1,7 @@
 import { JSX, h } from "preact";
 import { dialogueBox, formGroup, tinyText } from "./styles.css";
-import term_font from "cc-web-term/assets/term_font.png";
-import term_font_hd from "cc-web-term/assets/term_font_hd.png";
+import termFont from "cc-web-term/assets/term_font.png";
+import termFontHd from "cc-web-term/assets/term_font_hd.png";
 
 export type Settings = {
   // Editor Settings
@@ -49,8 +49,8 @@ export const Settings = ({ settings, update }: SettingsProperties): JSX.Element 
         Font style
         <select value={settings.terminalFont}
           onInput={(e: Event) => updateWith({ terminalFont: (e.target as HTMLInputElement).value })} >
-          <option value={term_font}>Standard Font</option>
-          <option value={term_font_hd}>High-definition font</option>
+          <option value={termFont}>Standard Font</option>
+          <option value={termFontHd}>High-definition font</option>
         </select>
       </label>
     </div>

@@ -1,15 +1,15 @@
-import * as mTypes from "../../editor/lua";
+import type * as monaco from "../../editor/lua";
 import { Component, h } from "preact";
-import { Settings } from "../settings";
+import type { Settings } from "../settings";
 import { editorView } from "../styles.css";
 
-let monaco: typeof mTypes | null = null;
+let monacoVal: typeof monaco | null = null;
 
-export type Setup = (model: mTypes.editor.ITextModel) => void;
+export type Setup = (model: monaco.editor.ITextModel) => void;
 export type Model = {
   resolved: true,
-  text: mTypes.editor.ITextModel,
-  view: mTypes.editor.ICodeEditorViewState | null,
+  text: monaco.editor.ITextModel,
+  view: monaco.editor.ICodeEditorViewState | null,
 };
 
 export type LazyModel = Model | {
@@ -22,7 +22,7 @@ export type LazyModel = Model | {
 
 let unique = 0;
 
-const modelFactory = (m: typeof mTypes, out: {}, contents: string, name: string, setup: Setup): Model => {
+const modelFactory = (m: typeof monaco, out: {}, contents: string, name: string, setup: Setup): Model => {
   unique++; // We keep a unique id to ensure the Uri is not repeated.
   const text = m.editor.createModel(contents, undefined, m.Uri.file(`f${unique.toString(16)}/${name}`));
 
@@ -40,7 +40,7 @@ const modelFactory = (m: typeof mTypes, out: {}, contents: string, name: string,
 const forceModel = (model: LazyModel): Model => {
   if (model.resolved) return model;
 
-  const resolved = modelFactory(monaco!, model, model.contents, model.name, model.setup);
+  const resolved = modelFactory(monacoVal!, model, model.contents, model.name, model.setup);
 
   const old: { contents?: string, mode?: string, setup?: Setup } = model;
   delete old.contents;
@@ -51,12 +51,12 @@ const forceModel = (model: LazyModel): Model => {
 };
 
 export const createModel = (contents: string, name: string, setup: Setup): LazyModel => {
-  if (monaco) return modelFactory(monaco, {}, contents, name, setup);
+  if (monacoVal) return modelFactory(monacoVal, {}, contents, name, setup);
 
   const model: LazyModel = {
     resolved: false, contents, name, setup,
     promise: import("../../editor/lua").then(m => {
-      monaco = m;
+      monacoVal = m;
       return forceModel(model);
     }),
   };
@@ -97,7 +97,7 @@ export type EditorProps = {
 };
 
 export default class Editor extends Component<EditorProps, {}> {
-  private editor?: mTypes.editor.IStandaloneCodeEditor;
+  private editor?: monaco.editor.IStandaloneCodeEditor;
   private editorPromise?: Promise<void>;
 
   public componentDidMount() {
@@ -106,10 +106,10 @@ export default class Editor extends Component<EditorProps, {}> {
   }
 
   private setupEditor() {
-    if (!monaco) {
+    if (!monacoVal) {
       const promise = this.editorPromise = import("../../editor/lua")
         .then(m => {
-          monaco = m;
+          monacoVal = m;
           if (this.editorPromise !== promise) return;
           this.setupEditor();
         })
@@ -124,7 +124,7 @@ export default class Editor extends Component<EditorProps, {}> {
     const base = this.base as HTMLElement;
     while (base.firstChild) base.firstChild.remove();
 
-    this.editor = monaco.editor.create(base, {
+    this.editor = monacoVal.editor.create(base, {
       roundedSelection: false,
       autoIndent: "full",
     });
@@ -133,7 +133,7 @@ export default class Editor extends Component<EditorProps, {}> {
       id: "save",
       label: "Save",
       keybindings: [
-        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S,
+        monacoVal.KeyMod.CtrlCmd | monacoVal.KeyCode.KEY_S,
       ],
       contextMenuGroupId: "file",
       contextMenuOrder: 1.5,
@@ -186,7 +186,7 @@ export default class Editor extends Component<EditorProps, {}> {
       readOnly,
     });
 
-    monaco!.editor.setTheme(settings.darkMode ? "vs-dark" : "vs");
+    monacoVal!.editor.setTheme(settings.darkMode ? "vs-dark" : "vs");
 
     // TODO: Tab size, trim auto whitespace
 

@@ -1,9 +1,9 @@
 import { h } from "preact";
-import { Token } from "../token";
+import type { Token } from "../token";
 import { errorView, infoContainer, infoDescription, infoView, termLine } from "./styles.css";
 
 export type TokenDisplayProps = {
-  token: Token;
+  token: Token,
 };
 
 const genSetup = (token: string) =>
@@ -76,7 +76,7 @@ export const TokenDisplay = ({ token }: TokenDisplayProps) =>
   </div>;
 
 export type LostConnectionProps = {
-  token: Token;
+  token: Token,
 };
 
 export const LostConnection = ({ token }: LostConnectionProps) =>
@@ -90,7 +90,7 @@ export const LostConnection = ({ token }: LostConnectionProps) =>
   </div>;
 
 export type UnknownErrorProps = {
-  error: string;
+  error: string,
 };
 
 export const UnknownError = ({ error }: UnknownErrorProps) =>
