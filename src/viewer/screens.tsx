@@ -9,10 +9,6 @@ export type TokenDisplayProps = {
 const genSetup = (token: string) =>
   <div>
     <pre>
-      <span class={termLine}>wget run {window.location.origin}/cloud.lua {token}</span>
-    </pre>
-    <p>or</p>
-    <pre>
       <span class={termLine}>wget {window.location.origin}/cloud.lua</span>
       {"\n"}
       <span class={termLine}>cloud.lua {token}</span>
