@@ -1,5 +1,5 @@
 import type { Packet } from "../network";
-export { Semaphore } from "cc-web-term";
+export { Semaphore } from "@squid-dev/cc-web-term";
 
 export class BufferingEventQueue<T> {
   private readonly queue: T[] = [];

@@ -1,7 +1,7 @@
 import { JSX, h } from "preact";
 import { dialogueBox, formGroup, tinyText } from "./styles.css";
-import termFont from "cc-web-term/assets/term_font.png";
-import termFontHd from "cc-web-term/assets/term_font_hd.png";
+import termFont from "@squid-dev/cc-web-term/assets/term_font.png";
+import termFontHd from "@squid-dev/cc-web-term/assets/term_font_hd.png";
 
 export type Settings = {
   // Editor Settings

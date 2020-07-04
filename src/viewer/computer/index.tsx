@@ -1,4 +1,4 @@
-import { ComputerActionable, KeyCode, LuaValue, Terminal, TerminalData, keyName } from "cc-web-term";
+import { ComputerActionable, KeyCode, LuaValue, Terminal, TerminalData, keyName } from "@squid-dev/cc-web-term";
 import { Component, h } from "preact";
 import { computeDiff } from "../../diff";
 import { FileAction, FileActionFlags, FileConsume, PacketCode, encodePacket } from "../../network";

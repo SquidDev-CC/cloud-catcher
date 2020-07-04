@@ -1,4 +1,4 @@
-import { Styles } from "cc-web-term";
+import { Styles } from "@squid-dev/cc-web-term";
 import { Component, JSX, h } from "preact";
 import { WebsocketCodes } from "../codes";
 import { Capability, PacketCode, decodePacket, encodePacket } from "../network";
@@ -9,7 +9,7 @@ import { Cog } from "./font";
 import { LostConnection, TokenDisplay, UnknownError } from "./screens";
 import { Settings } from "./settings";
 import { container, dialogueOverlay, settingsCog } from "./styles.css";
-import termFont from "cc-web-term/assets/term_font.png";
+import termFont from "@squid-dev/cc-web-term/assets/term_font.png";
 
 export type MainProps = {
   token: Token,
