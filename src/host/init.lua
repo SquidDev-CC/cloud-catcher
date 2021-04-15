@@ -226,7 +226,13 @@ end
 local ok, res = true
 if co then ok, res = coroutine.resume(co, "shell") end
 local last_change, last_timer = os.clock(), nil
+
 local pending_events, pending_n = {}, 0
+local function push_event(event)
+  pending_n = pending_n + 1
+  pending_events[pending_n] = event
+end
+
 while ok and (not co or coroutine.status(co) ~= "dead") do
   if not info_dirty and last_label ~= get_label() then info_dirty = true end
   if server_term and last_timer == nil and (buffer.is_dirty() or info_dirty) then
@@ -312,15 +318,14 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
       if code == 0x11 then -- TerminalEvents
         -- Just forward events. We map key/key_up events to the correct version.
         for _, event in ipairs(packet.events) do
-          pending_n = pending_n + 1
           if event.name == "cloud_catcher_key" then
             local key = keys[event.args[1]]
-            if type(key) == "number" then pending_events[pending_n] = { n = 3, "key", key, event.args[2] } end
+            if type(key) == "number" then push_event { n = 3, "key", key, event.args[2] } end
           elseif event.name == "cloud_catcher_key_up" then
               local key = keys[event.args[1]]
-              if type(key) == "number" then pending_events[pending_n] = { n = 2, "key_up", key } end
+              if type(key) == "number" then push_event { n = 2, "key_up", key } end
           else
-            pending_events[pending_n] = table.pack(event.name, table.unpack(event.args))
+            push_event(table.pack(event.name, table.unpack(event.args)))
           end
         end
       end
