@@ -257,7 +257,7 @@ local function buffer(original)
 
       if type(r) == "number" and g == nil and b == nil then
           palcol[1], palcol[2], palcol[3] = colours.rgb8(r)
-          palette_24[colour] = r
+          palette_24[colour_lookup[colour]] = r
       else
           if type(r) ~= "number" then error("bad argument #2 (expected number, got " .. type(r) .. ")", 2) end
           if type(g) ~= "number" then error("bad argument #3 (expected number, got " .. type(g) .. ")", 2) end
