@@ -45,7 +45,7 @@ export const TokenDisplay = ({ token }: TokenDisplayProps) =>
       <p>You will require:</p>
       <ul>
         <li>An internet connection</li>
-        <li><a href="https://minecraft.curseforge.com/projects/cc-tweaked">CC: Tweaked</a></li>
+        <li><a href="https://minecraft.curseforge.com/projects/cc-tweaked">CC: Tweaked for Forge</a> or <a href="https://github.com/Merith-TK/cc-restitched">CC: Restitched for Fabric</a></li>
       </ul>
       <p>
         Then just follow the instructions at the top!
