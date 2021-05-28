@@ -28,7 +28,7 @@
   "dependencies": {
     "diff": "^4.0.2",
     "esm": "^3.2.25",
-    "ws": "^7.3.0"
+    "ws": "^7.4.5"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.1.0",
