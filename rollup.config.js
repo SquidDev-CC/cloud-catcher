@@ -1,13 +1,17 @@
-import commonjs from "@rollup/plugin-commonjs";
+import { promises as fs } from "fs";
+
 import license from "rollup-plugin-license";
 import postcss from "rollup-plugin-postcss";
 import resolve from "@rollup/plugin-node-resolve";
+import typescript from "@rollup/plugin-typescript";
 import url from "@rollup/plugin-url";
 
+const out = "build/rollup";
+
 export default {
-  input: "build/typescript/viewer/index.js",
+  input: "src/viewer/index.tsx",
   output: {
-    dir: "build/rollup/",
+    dir: out,
     format: "amd",
     paths: {
       "monaco-editor": "vs/editor/editor.main",
@@ -20,7 +24,7 @@ export default {
   plugins: [
     postcss({
       extract: true,
-      namedExports: name => name.replace(/-([a-z])/g, (_, x) => x.toUpperCase()),
+      namedExports: true,
       modules: true,
     }),
     url({
@@ -29,8 +33,9 @@ export default {
       include: ["**/*.worker.js", "**/*.png"],
     }),
 
+    typescript(),
     resolve({ mainFields: ["module", "browser", "main"], }),
-    commonjs(),
+    // commonjs(),
 
     license({
       banner:
@@ -40,7 +45,19 @@ export default {
 
 @license
   `,
-      thirdParty: { output: "build/rollup/dependencies.txt" },
+      thirdParty: { output: `${out}/dependencies.txt` },
     }),
+
+    {
+      name: "cloud-catcher",
+      async writeBundle () {
+        await Promise.all([
+          fs.copyFile("node_modules/requirejs/require.js", `${out}/require.js`),
+          ...(["index.html", "404.html", "loader.js"].map(file =>
+            fs.copyFile(`public/${file}`, `${out}/${file}`)
+          )),
+        ]);
+      },
+    },
   ],
 };

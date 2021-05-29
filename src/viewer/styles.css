@@ -24,57 +24,57 @@ pre {
   font-size: 0.8em;
 }
 
-.tiny-text {
+.tinyText {
   font-weight: 200;
   font-size: 0.8em;
   color: #aaa;
 }
 
-.info-container, :global(.info-container) {
+.infoContainer, :global(.infoContainer) {
   position: relative;
   top: 80px;
   margin: 0px auto;
   max-width: 900px;
 }
 
-.info-view, .info-description, :global(.info-view) {
+.infoView, .infoDescription, :global(.infoView) {
   padding: 5px 10px;
 }
 
-.info-view {
+.infoView {
   font-size: 1.5em;
   line-height: 1.3em;
 
   border: 3px solid #eee;
 }
 
-.error-view {
+.errorView {
     background-color: #ffb6b6;
     color: #670000;
 }
 
-.term-line:before {
+.termLine:before {
   content: "> ";
 }
 
-.computer-view {
+.computerView {
   height: 100%;
 }
 
-.computer-split {
+.computerSplit {
   height: 100%;
   display: flex;
   flex-wrap: nowrap;
   justify-content: space-between;
 }
 
-.terminal-view, .editor-view {
+.terminalView, .editorView {
   flex-grow: 1;
   flex-shrink: 1;
   overflow: hidden;
 }
 
-.file-list {
+.fileList {
   flex-basis: 200px;
   max-width: 200px;
   background-color: #eee;
@@ -82,42 +82,42 @@ pre {
   line-height: 1.4em;
 }
 
-.file-entry {
+.fileEntry {
   padding: 5px 3px;
   cursor: pointer;
 }
 
-.file-entry:hover {
+.fileEntry:hover {
   background-color: #ddd;
 }
 
-.file-entry.active {
+.fileEntry.active {
   background-color: #ccc !important;
 }
 
-.file-computer .file-name {
+.fileComputer .fileName {
   font-size: 1.4em;
 }
 
-.file-info, .file-name  {
+.fileInfo, .fileName {
   text-overflow: ellipsis;
   overflow: hidden;
 }
 
-.file-info {
+.fileInfo {
   font-size: 0.8em;
   color: #888;
 }
 
-.file-info a, .file-info a:hover, .file-info a:visited, .file-info a:focus, .file-info a:active {
+.fileInfo a, .fileInfo a:hover, .fileInfo a:visited, .fileInfo a:focus, .fileInfo a:active {
   color: inherit;
   text-decoration: none;
 }
 
-.file-icon { float: right; padding: 5px; }
-.file-entry:hover .file-icon:before  { content: "\2715"; }
-.file-icon.file-icon-modified:before { content: "\2b24"; }
-.file-icon.file-icon-readonly:before { content: "!"; }
+.fileIcon { float: right; padding: 5px; }
+.fileEntry:hover .fileIcon:before { content: "\2715"; }
+.fileIcon.fileIconModified:before { content: "\2b24"; }
+.fileIcon.fileIconReadonly:before { content: "!"; }
 
 .notifications {
   position: absolute;
@@ -140,39 +140,39 @@ pre {
 }
 
 .notification > * { padding: 0.5em; }
-.notification-kind { color: white; }
+.notificationKind { color: white; }
 
-.notification-content {
+.notificationContent {
   flex-grow: 1;
   flex-shrink: 1;
 }
 
-.notification-close {
+.notificationClose {
   color: #aaa;
   cursor: pointer;
 }
 
-.notification-close, .notification-kind {
+.notificationClose, .notificationKind {
   display: flex;
   align-items: center;
 }
 
-.notification-close:hover { color: #666; }
-.notification-close:before { content: "\2715"; }
+.notificationClose:hover { color: #666; }
+.notificationClose:before { content: "\2715"; }
 
-.notification-error { border: 1px solid #ff0000; }
-.notification-error .notification-kind { background-color: #ff0000; }
-.notification-error .notification-kind span:before { content: "Error"; }
+.notificationError { border: 1px solid #ff0000; }
+.notificationError .notificationKind { background-color: #ff0000; }
+.notificationError .notificationKind span:before { content: "Error"; }
 
-.notification-warn { border: 1px solid #f9982f; }
-.notification-warn .notification-kind { background-color: #f9982f; }
-.notification-warn .notification-kind span:before { content: "Warning"; }
+.notificationWarn { border: 1px solid #f9982f; }
+.notificationWarn .notificationKind { background-color: #f9982f; }
+.notificationWarn .notificationKind span:before { content: "Warning"; }
 
-.notification-ok { border: 1px solid #2dff31; }
-.notification-ok .notification-kind { background-color: #2dff31; }
-.notification-ok .notification-kind span:before { content: "Success"; }
+.notificationOk { border: 1px solid #2dff31; }
+.notificationOk .notificationKind { background-color: #2dff31; }
+.notificationOk .notificationKind span:before { content: "Success"; }
 
-.settings-cog {
+.settingsCog {
     position: fixed;
     bottom: 5px;
     left: 5px;
@@ -180,9 +180,9 @@ pre {
     z-index: 50;
 }
 
-.settings-cog:hover { opacity: 1; }
+.settingsCog:hover { opacity: 1; }
 
-.dialogue-overlay {
+.dialogueOverlay {
   position: fixed;
   top: 0px;
   bottom: 0px;
@@ -194,7 +194,7 @@ pre {
   background: rgba(0, 0, 0, 0.7);
 }
 
-.dialogue-box {
+.dialogueBox {
   position: relative;
   top: 80px;
   margin: 0px auto;
@@ -204,18 +204,18 @@ pre {
   background: white;
 }
 
-.form-group {
+.formGroup {
   display: flex;
   flex-wrap: wrap;
 }
 
-.form-group > label {
+.formGroup > label {
   flex-basis: 50%;
   padding: 10px;
   box-sizing: border-box;
   font-weight: 500;
 }
 
-.form-group input, .form-group select {
+.formGroup input, .formGroup select {
   margin: 0px 5px;
 }
