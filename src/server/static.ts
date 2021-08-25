@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import type * as http from "http";
 import * as path from "path";
-import * as url from "url";
+import type { UrlWithParsedQuery } from "url";
 
 const mimeTypes: { [key: string]: string | undefined } = {
   ".html": "text/html",
@@ -12,8 +12,7 @@ const mimeTypes: { [key: string]: string | undefined } = {
   ".lua": "text/lua",
 };
 
-export const handle = (dir: string) => (request: http.IncomingMessage, response: http.ServerResponse) => {
-  const requestUrl = url.parse(request.url || "");
+export const handle = (dir: string) => (requestUrl: UrlWithParsedQuery, _request: http.IncomingMessage, response: http.ServerResponse) => {
   const filePath = path.join(dir, !requestUrl.pathname || requestUrl.pathname === "/"
     ? "index.html"
     : requestUrl.pathname);

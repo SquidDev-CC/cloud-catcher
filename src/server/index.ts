@@ -3,6 +3,8 @@ import * as http from "http";
 import * as process from "process";
 import * as url from "url";
 import * as WebSocket from "ws";
+import { register as metrics, Counter, Gauge, collectDefaultMetrics } from "prom-client";
+
 import { HTTPCodes, WebsocketCodes } from "../codes";
 import {
   Capability, MAX_PACKET_SIZE, PacketCode, allowedFrom, checkCapability,
@@ -55,21 +57,64 @@ const connectionUpdate = (connection: Connection) => {
       capabilities: [...caps],
     }), sendCallback);
   }
+
+  if (connection.clients.size == 0) {
+    console.log(`All connections for ${connection.token} closed.`)
+    connections.delete(connection.token);
+  }
 };
 
 const server = http.createServer();
 const connections = new Map<Token, Connection>();
 
+let defaultHandler: (url: url.UrlWithParsedQuery, request: http.IncomingMessage, response: http.ServerResponse) => void;
 if (process.env.NODE_ENV === "production") {
   const contents404 = fs.readFileSync("public/404.html", { encoding: "utf-8" });
-  server.on("request", (_request: http.IncomingMessage, response: http.ServerResponse) => {
+  defaultHandler = (_url, _request, response) => {
     response.writeHead(404, { "Content-Type": "text/html" });
     response.end(contents404, "utf-8");
-    return;
-  });
+  };
 } else {
-  server.on("request", handle("build/rollup"));
+  defaultHandler = handle("build/rollup");
 }
+
+server.on("request", (request: http.IncomingMessage, response: http.ServerResponse) => {
+  const requestUrl = url.parse(request.url || "", true);
+  if (requestUrl.path === "/metrics") {
+    metrics.metrics().then(result => {
+      response.writeHead(200, { "Content-Type": metrics.contentType });
+      response.end(result, "utf-8");
+    }).catch(err => {
+      console.error(err);
+      response.writeHead(500, { "Content-Type": "text/plain" });
+      response.end("Unknown error", "utf-8");
+    })
+  } else {
+    return defaultHandler(requestUrl, request, response);
+  }
+});
+
+collectDefaultMetrics({ register: metrics });
+new Gauge({
+  name: "cloudcatcher_connections",
+  help: "Number of incoming websocket connections",
+  collect: function () {
+    let count = 0;
+    for (const connection of connections.values()) count += connection.clients.size;
+    this.set(count);
+  }
+});
+new Gauge({
+  name: "cloudcatcher_tokens",
+  help: "Number of active tokens",
+  collect: function () {
+    this.set(connections.size);
+  }
+});
+const totalConnections = new Counter({
+  name: "cloudcatcher_opened_connections",
+  help: "Total number of opened connections",
+});
 
 const wss = new WebSocket.Server({
   server,
@@ -123,6 +168,8 @@ const wss = new WebSocket.Server({
 wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
   const requestUrl = url.parse(req.url || "", true);
   if (!requestUrl || !requestUrl.query || !requestUrl.pathname) return ws.close(WebsocketCodes.UnsupportedData);
+
+  totalConnections.inc();
 
   switch (requestUrl.pathname.replace(/\/+$/, "")) {
     case "/view":
