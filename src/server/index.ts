@@ -235,10 +235,10 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
 
       ws.on("pong", () => ws.isAlive = true);
 
-      ws.on("message", message => {
+      ws.on("message", m => {
         // Ensure this is a valid packet. In the future we can notify viewers of
         // their invalidity.
-        if (typeof message !== "string") return;
+        const message = m.toString("utf-8");
 
         const packet = decodePacket(message);
         if (!packet || !allowedFrom(packet.packet, capabilities)) return;

@@ -54,6 +54,13 @@ type ComputerState = {
   label: string | null,
 };
 
+const windowTitle = (id: number | null, label: string | null) => {
+  if (id === null && label === null) return "Cloud Catcher";
+  if (id === null) return `${label} | Cloud Catcher`;
+  if (label === null) return `Computer #${id} | Cloud Catcher`;
+  return `${label} (Computer #${id}) | Cloud Catcher`;
+};
+
 export class Computer extends Component<ComputerProps, ComputerState> implements ComputerActionable {
   public constructor(props: ComputerProps, context: any) {
     super(props, context);
@@ -77,6 +84,11 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
 
   public componentWillUnmount() {
     this.props.events.detach(this.onPacket);
+    document.title = windowTitle(null, null);
+  }
+
+  public componentDidUpdate() {
+    document.title = windowTitle(this.state.id, this.state.label);
   }
 
   public render(
