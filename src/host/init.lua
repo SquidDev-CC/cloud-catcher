@@ -62,7 +62,7 @@ if _G.cloud_catcher then
     error()
 
   else
-    error(("%q is not a cloud catcher subcommand, run with --h for more info"):format(subcommand), 0)
+    error(("%q is not a cloud catcher subcommand, run with --help for more info"):format(subcommand), 0)
   end
 
   return
