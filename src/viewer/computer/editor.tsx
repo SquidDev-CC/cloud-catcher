@@ -133,7 +133,7 @@ export default class Editor extends Component<EditorProps, {}> {
       id: "save",
       label: "Save",
       keybindings: [
-        monacoVal.KeyMod.CtrlCmd | monacoVal.KeyCode.KEY_S,
+        monacoVal.KeyMod.CtrlCmd | monacoVal.KeyCode.KeyS,
       ],
       contextMenuGroupId: "file",
       contextMenuOrder: 1.5,

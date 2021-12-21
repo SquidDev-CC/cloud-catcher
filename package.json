@@ -28,7 +28,7 @@
   "dependencies": {
     "diff": "^5.0.0",
     "esm": "^3.2.25",
-    "prom-client": "^13.2.0",
+    "prom-client": "^14.0.0",
     "ws": "^8.2.0"
   },
   "devDependencies": {
@@ -38,11 +38,11 @@
     "@rollup/plugin-url": "^6.0.0",
     "@squid-dev/cc-web-term": "^1.0.0",
     "@types/diff": "^5.0.0",
-    "@types/ws": "^7.2.6",
+    "@types/ws": "^8.2.0",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
     "eslint": "^7.27.0",
-    "monaco-editor": "^0.27.0",
+    "monaco-editor": "^0.31.0",
     "postcss-selector-parser": "^6.0.2",
     "preact": "^10.4.5",
     "requirejs": "^2.3.6",
