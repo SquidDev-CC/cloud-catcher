@@ -181,6 +181,10 @@ local function buffer(original)
     return original.setCursorBlink(b)
   end
 
+  function redirect.getCursorBlink()
+    return cursor_blink
+  end
+
   function redirect.getSize()
     return sizeX, sizeY
   end
