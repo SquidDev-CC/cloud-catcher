@@ -2,10 +2,7 @@
   "name": "cloud-catcher",
   "version": "1.0.0",
   "description": "A ComputerCraft terminal renderer on the web",
-  "main": "src/index.js",
-  "config": {
-    "server": "cloud-catcher.squiddev.cc"
-  },
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/SquidDev-CC/cloud-catcher.git"
@@ -15,26 +12,36 @@
   ],
   "author": "SquidDev",
   "license": "MIT",
+  "bin": {
+    "cloud-catcher": "_bin/server.cjs"
+  },
+  "config": {
+    "server": "cloud-catcher.squiddev.cc"
+  },
+  "files": [
+    "_bin",
+    "_site"
+  ],
   "scripts": {
     "build:setup": "node tools/setup.js",
-    "build:tsc": "node_modules/.bin/tsc -p . --outDir build/server",
-    "build:rollup": "rollup -c",
+    "build:rollup": "rollup -c rollup.config.ts --configPlugin @rollup/plugin-typescript",
     "build:lua": "lua tools/make.lua",
-    "build": "npm run build:setup && npm run build:tsc && npm run build:rollup && npm run build:lua",
+    "build": "npm run build:setup && npm run build:rollup && npm run build:lua",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
-    "host": "node -r esm build/typescript/server"
+    "host": "node _bin/server.cjs"
   },
   "dependencies": {
     "diff": "^5.0.0",
-    "esm": "^3.2.25",
     "prom-client": "^14.0.0",
     "ws": "^8.2.0"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^13.0.0",
+    "@rollup/plugin-commonjs": "^22.0.2",
+    "@rollup/plugin-html": "^0.2.4",
+    "@rollup/plugin-node-resolve": "^14.0.0",
     "@rollup/plugin-replace": "^4.0.0",
-    "@rollup/plugin-typescript": "^8.2.1",
+    "@rollup/plugin-typescript": "^8.5.0",
     "@rollup/plugin-url": "^7.0.0",
     "@squid-dev/cc-web-term": "^1.0.0",
     "@types/diff": "^5.0.0",
@@ -42,16 +49,18 @@
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
     "eslint": "^7.27.0",
-    "monaco-editor": "^0.33.0",
+    "magic-string": "^0.26.3",
+    "monaco-editor": "^0.34.0",
+    "postcss": "^8.4.16",
     "postcss-selector-parser": "^6.0.2",
     "preact": "^10.4.5",
     "requirejs": "^2.3.6",
     "rollup": "^2.50.4",
     "rollup-plugin-license": "^2.1.0",
+    "rollup-plugin-livereload": "^2.0.5",
     "rollup-plugin-postcss": "^4.0.0",
-    "terser": "^5.7.0",
-    "typescript": "^4.3.2",
-    "uglifycss": "0.0.29"
+    "rollup-plugin-terser": "^7.0.2",
+    "typescript": "^4.3.2"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.1",

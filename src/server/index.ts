@@ -1,17 +1,16 @@
-import * as fs from "fs";
 import * as http from "http";
 import * as process from "process";
 import * as url from "url";
 import * as WebSocket from "ws";
 import { register as metrics, Counter, Gauge, collectDefaultMetrics } from "prom-client";
 
-import { HTTPCodes, WebsocketCodes } from "../codes";
+import { HTTPCodes, WebsocketCodes } from "../codes.js";
 import {
   Capability, MAX_PACKET_SIZE, PacketCode, allowedFrom, checkCapability,
   decodePacket, encodePacket,
-} from "../network";
-import { Token, checkToken } from "../token";
-import { handle } from "./static";
+} from "../network.js";
+import { Token, checkToken } from "../token.js";
+import { handle } from "./static.js";
 
 type SessionWebSocket = WebSocket & {
   isAlive: boolean,
@@ -69,13 +68,12 @@ const connections = new Map<Token, Connection>();
 
 let defaultHandler: (url: url.UrlWithParsedQuery, request: http.IncomingMessage, response: http.ServerResponse) => void;
 if (process.env.NODE_ENV === "production") {
-  const contents404 = fs.readFileSync("public/404.html", { encoding: "utf-8" });
   defaultHandler = (_url, _request, response) => {
     response.writeHead(404, { "Content-Type": "text/html" });
-    response.end(contents404, "utf-8");
+    response.end("Not Found", "utf-8");
   };
 } else {
-  defaultHandler = handle("build/rollup");
+  defaultHandler = handle("_site");
 }
 
 server.on("request", (request: http.IncomingMessage, response: http.ServerResponse) => {
@@ -116,9 +114,9 @@ const totalConnections = new Counter({
   help: "Total number of opened connections",
 });
 
-const wss = new WebSocket.Server({
+const wss = new WebSocket.WebSocketServer({
   server,
-  verifyClient: ((info, cb) => {
+  verifyClient: (info, cb): void => {
     if (!info.req.url) return cb(false, HTTPCodes.BadRequest, "Cannot determine URL");
 
     const requestUrl = url.parse(info.req.url, true);
@@ -161,7 +159,7 @@ const wss = new WebSocket.Server({
       default:
         return cb(false, HTTPCodes.NotFound);
     }
-  }) as WebSocket.VerifyClientCallbackAsync,
+  },
   maxPayload: MAX_PACKET_SIZE,
 });
 

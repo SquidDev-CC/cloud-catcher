@@ -1,6 +1,6 @@
 #!/usr/bin/env lua
 local server = os.getenv("npm_package_config_server") or "cloud-catcher.squiddev.cc"
-local out, err = io.open("build/rollup/cloud.lua", "w")
+local out, err = io.open("_site/cloud.lua", "w")
 if not out then error(err, 0) end
 
 local function has_content(line)

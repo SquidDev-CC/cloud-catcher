@@ -1,4 +1,4 @@
-import type { Fragment } from "./diff";
+import type { Fragment } from "./diff.js";
 
 /**
  * This represents the capabilities a client has. The server can be thought of a

@@ -1,4 +1,4 @@
-/build
-/dist
+/_*
+/result
 /src/viewer/styles.css.d.ts
 /node_modules
