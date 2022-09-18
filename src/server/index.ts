@@ -329,5 +329,24 @@ setInterval(() => {
   });
 }, 15000);
 
-console.log("Listening on 8080");
-server.listen(8080);
+if (process.env.LISTEN_PID) {
+  // If passed a socket via systemd, use that.
+  if (process.env.LISTEN_PID !== `${process.pid}`) {
+    throw new Error(`LISTEN_PID=${process.env.LISTEN_PID}, but current pid is ${process.pid}`);
+  }
+  if (!process.env.LISTEN_FDS) throw new Error("LISTEN_FDS not given");
+
+  const fds = parseInt(process.env.LISTEN_FDS);
+  if (fds != fds) throw new Error(`Cannot parse LISTEN_FDS=${process.env.LISTEN_FDS}`);
+  if (fds <= 0) throw new Error("No fds parsed from systemd");
+
+  console.log(`Listening on fd=3`);
+  server.listen({ fd: 3 });
+} else {
+  // Otherwise listen on a port
+  const port = parseInt(process.env.CLOUD_CATCHER_PORT ?? "8080");
+  if (port != port) throw new Error(`Cannot parse port from CLOUD_CATCHER_PORT=${process.env.CLOUD_CATCHER_PORT}`)
+
+  console.log(`Listening on ${port}`);
+  server.listen({ host: "localhost", port, });
+}

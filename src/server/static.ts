@@ -33,7 +33,7 @@ export const handle = (dir: string) => (requestUrl: UrlWithParsedQuery, _request
       if (error.code === "ENOENT") {
         fs.readFile(path.join(dir, "404.html"), { encoding: "utf-8" }, (_error, contents) => {
           response.writeHead(404, { "Content-Type": "text/html" });
-          response.end(contents, "utf-8");
+          response.end(contents || "Not Found", "utf-8");
         });
       } else {
         response.writeHead(500);
