@@ -309,11 +309,19 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
         connectionUpdate(connection);
       });
 
+      ws.on("error", e => {
+        console.error("Error in websocket client", e);
+      });
+
       return;
     }
     default:
       return ws.close(WebsocketCodes.UnsupportedData);
   }
+});
+
+wss.on("error", e => {
+  console.error("Error in websocket server", e);
 });
 
 setInterval(() => {

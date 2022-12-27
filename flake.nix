@@ -17,7 +17,7 @@
           slimNode = pkgs."nodejs-slim-${builtins.toString nodejs}_x";
 
           # Use dream2nix to generate our core package.
-          output = d2n.makeOutputs {
+          output = d2n.dream2nix-interface.makeOutputs {
             source = ./.;
             settings = [{ subsystemInfo.nodejs = nodejs; }];
 
