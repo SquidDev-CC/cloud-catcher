@@ -10,6 +10,10 @@ import {
   active, computerSplit, computerView, fileComputer, fileEntry, fileIcon, fileIconModified, fileIconReadonly,
   fileInfo, fileList as fileListCls, fileName, terminalView,
 } from "../styles.css";
+import {
+  active as dark_active, computerSplit as dark_computerSplit, computerView as dark_computerView, fileComputer as dark_fileComputer, fileEntry as dark_fileEntry, fileIcon as dark_fileIcon, fileIconModified as dark_fileIconModified, fileIconReadonly as dark_fileIconReadonly,
+  fileInfo as dark_fileInfo, fileList as dark_fileListCls, fileName as dark_fileName, terminalView as dark_terminalView
+} from "../darkStyles.css"; //Import of the dark styles 
 import Editor, * as editor from "./editor";
 import { Notification, NotificationBody, NotificationKind, Notifications } from "./notifications";
 
@@ -97,10 +101,10 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
   ) {
     const fileList = files.map(x => {
       // TODO: Too lazy to do this right now
-      const fileClasses = fileEntry + " " + (x.name === activeFile ? active : "");
-      const iconClasses = fileIcon
-        + " " + (x.modified ? fileIconModified : "")
-        + " " + (x.readOnly ? fileIconReadonly : "");
+      const fileClasses = (settings.darkMode ? dark_fileEntry : fileEntry) + " " + (x.name === activeFile ? (settings.darkMode ? dark_active : active) : "");
+      const iconClasses = settings.darkMode ? dark_fileIcon : fileIcon
+        + " " + (x.modified ? (settings.darkMode ? dark_fileIconModified : fileIconModified) : "")
+        + " " + (x.readOnly ? (settings.darkMode ? dark_fileIconReadonly : fileIconReadonly) : "");
       const iconLabels = "Close editor" + (x.readOnly ? " (read only)" : "");
 
       let name = x.name;
@@ -108,21 +112,21 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
       const sepIndex = name.lastIndexOf("/");
       return <div key={x.name} class={fileClasses} onClick={this.createSelectFile(x.name)}>
         <div class={iconClasses} title={iconLabels} onClick={this.createClose(x.name)}></div>
-        <div class={fileName}>{name.substr(sepIndex + 1)}</div>
-        <div class={fileInfo}>{name.substr(0, sepIndex + 1)}</div>
+        <div class={settings.darkMode ? dark_fileName : fileName}>{name.substr(sepIndex + 1)}</div>
+        <div class={settings.darkMode ? dark_fileInfo : fileInfo}>{name.substr(0, sepIndex + 1)}</div>
       </div>;
     });
 
-    const computerClasses = `${fileEntry} ${fileComputer} ${activeFile === null ? active : ""}`;
+    const computerClasses = `${settings.darkMode ? dark_fileEntry : fileEntry} ${settings.darkMode ? dark_fileComputer : fileComputer} ${activeFile === null ? (settings.darkMode ? dark_active : active) : ""}`;
     const target = `${window.location.origin}/?id=${this.props.token}`;
     const activeInfo = activeFile === null ? null : files.find(x => x.name === activeFile);
-    return <div class={computerView}>
+    return <div class={settings.darkMode ? dark_computerView : computerView}>
       <Notifications notifications={notifications} onClose={this.onCloseNotification} />
-      <div class={computerSplit}>
-        <div class={fileListCls}>
+      <div class={settings.darkMode ? dark_computerSplit : computerSplit}>
+        <div class={settings.darkMode ? dark_fileListCls : fileListCls}>
           <div class={computerClasses} onClick={this.createSelectFile(null)}>
-            <div class={fileName}>Remote files</div>
-            <div class={fileInfo}>
+            <div class={settings.darkMode ? dark_fileName : fileName}>Remote files</div>
+            <div class={settings.darkMode ? dark_fileInfo : fileInfo}>
               <a href={target} title="Get a shareable link of this session token"
                 onClick={this.onClickToken}>{token}</a>
             </div>
@@ -130,7 +134,7 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
           {fileList}
         </div>
         {activeInfo == null || activeFile == null
-          ? <div class={terminalView}>
+          ? <div class={settings.darkMode ? dark_terminalView : terminalView}>
             <Terminal computer={this} terminal={terminal} changed={terminalChanged} focused={focused}
               font={settings.terminalFont} on={true} id={id} label={label} />
           </div>
