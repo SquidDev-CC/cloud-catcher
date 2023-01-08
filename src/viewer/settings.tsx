@@ -1,5 +1,6 @@
 import { JSX, h } from "preact";
-import { dialogueBox, formGroup, tinyText } from "./styles.css";
+import { dialogueBox, formGroup} from "./styles.css";
+import { dialogueBox as dark_dialogueBox, formGroup as dark_formGroup} from "./darkStyles.css";
 import termFont from "@squid-dev/cc-web-term/assets/term_font.png";
 import termFontHd from "@squid-dev/cc-web-term/assets/term_font_hd.png";
 
@@ -26,10 +27,10 @@ export const Settings = ({ settings, update }: SettingsProperties): JSX.Element 
     update({ ...settings, ...changes });
   }
 
-  return <div class={dialogueBox}>
+  return <div class={settings.darkMode ? dark_dialogueBox : dialogueBox}>
     <h2>Settings</h2>
     <h3>Editor settings</h3>
-    <div class={formGroup}>
+    <div class={settings.darkMode ? dark_formGroup : formGroup}>
       <label>
         <input type="checkbox" checked={settings.showInvisible}
           onInput={(e: Event) => updateWith({ showInvisible: (e.target as HTMLInputElement).checked })} />
@@ -44,7 +45,7 @@ export const Settings = ({ settings, update }: SettingsProperties): JSX.Element 
     </div>
 
     <h3>Terminal settings</h3>
-    <div class={formGroup}>
+    <div class={settings.darkMode ? dark_formGroup : formGroup}>
       <label>
         Font style
         <select value={settings.terminalFont}
@@ -56,14 +57,11 @@ export const Settings = ({ settings, update }: SettingsProperties): JSX.Element 
     </div>
 
     <h3>General settings</h3>
-    <div class={formGroup} >
+    <div class={settings.darkMode ? dark_formGroup : formGroup} >
       <label>
         <input type="checkbox" checked={settings.darkMode}
           onInput={(e: Event) => updateWith({ darkMode: (e.target as HTMLInputElement).checked })} />
         Dark Mode
-        {settings.darkMode
-          ? <span class={tinyText}>Only the editor currently, feel free to PR some fancy CSS.</span>
-          : ""}
       </label>
 
       <label>
