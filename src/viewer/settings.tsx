@@ -1,5 +1,5 @@
 import { JSX, h } from "preact";
-import { dialogueBox, formGroup, tinyText } from "./styles.css";
+import { dialogueBox, formGroup } from "./styles.css";
 import termFont from "@squid-dev/cc-web-term/assets/term_font.png";
 import termFontHd from "@squid-dev/cc-web-term/assets/term_font_hd.png";
 
@@ -61,9 +61,6 @@ export const Settings = ({ settings, update }: SettingsProperties): JSX.Element 
         <input type="checkbox" checked={settings.darkMode}
           onInput={(e: Event) => updateWith({ darkMode: (e.target as HTMLInputElement).checked })} />
         Dark Mode
-        {settings.darkMode
-          ? <span class={tinyText}>Only the editor currently, feel free to PR some fancy CSS.</span>
-          : ""}
       </label>
 
       <label>
