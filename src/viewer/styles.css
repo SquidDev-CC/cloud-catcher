@@ -1,4 +1,4 @@
-[data-theme="light"] {
+:root {
   --color-background: #fff;
   --color-text: #444;
   --color-tinytext: #aaa;
@@ -222,6 +222,7 @@ pre {
   left: 5px;
   opacity: 0.6;
   z-index: 50;
+  fill: var(--color-text);
 }
 
 .settingsCog:hover { opacity: 1; }

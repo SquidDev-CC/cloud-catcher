@@ -95,7 +95,6 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
     { token, settings, focused }: ComputerProps,
     { activeFile, files, notifications, terminal, terminalChanged, id, label }: ComputerState,
   ) {
-    document.body.setAttribute("data-theme", settings.darkMode ? "dark" : "light");
     const fileList = files.map(x => {
       // TODO: Too lazy to do this right now
       const fileClasses = fileEntry + " " + (x.name === activeFile ? active : "");

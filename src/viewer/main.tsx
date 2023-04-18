@@ -30,7 +30,7 @@ export class Main extends Component<MainProps, MainState> {
     super(props, context);
   }
 
-  public componentWillMount() {
+  public override componentWillMount() {
     const { token } = this.props;
     const protocol = window.location.protocol === "http:" ? "ws:" : "wss:";
     const caps = [Capability.TerminalView, Capability.FileEdit].join(",");
@@ -139,27 +139,37 @@ export class Main extends Component<MainProps, MainState> {
     });
   }
 
-  public componentWillUnmount() {
+  public override componentWillUnmount() {
     const socket = this.state && this.state.websocket;
     if (socket) socket.close(WebsocketCodes.Normal);
   }
 
-  public shouldComponentUpdate(_props: MainProps, newState: MainState) {
+  public override shouldComponentUpdate(_props: MainProps, newState: MainState) {
     return this.state.currentVDom !== newState.currentVDom ||
       this.state.dialogue !== newState.dialogue ||
       this.state.settings !== newState.settings;
   }
 
-  public componentDidUpdate() {
+  public override componentDidMount() {
+    this.componentDidRender();
+  }
+
+  public override componentDidUpdate() {
     // Sync settings back to local storage
     try {
       window.localStorage.settings = JSON.stringify(this.state.settings);
     } catch {
       // Ignore
     }
+
+    this.componentDidRender();
   }
 
-  public render(_props: MainProps, state: MainState) {
+  private componentDidRender() {
+    document.body.setAttribute("data-theme", this.state.settings.darkMode ? "dark" : "light");
+  }
+
+  public override render(_props: MainProps, state: MainState) {
     return <div class={container}>
       {state.currentVDom(state)}
       <button class={`${Styles.actionButton} ${settingsCog}`}
