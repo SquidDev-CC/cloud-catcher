@@ -67,12 +67,6 @@ pre {
   font-size: 0.8em;
 }
 
-.tinyText {
-  font-weight: 200;
-  font-size: 0.8em;
-  color: var(--color-tinytext);
-}
-
 .infoContainer, :global(.infoContainer) {
   position: relative;
   top: 80px;
