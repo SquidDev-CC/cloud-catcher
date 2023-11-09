@@ -73,15 +73,30 @@ local current_path = shell.getRunningProgram()
 local current_name = fs.getName(current_path)
 
 local arguments = argparse.create(current_name .. ": Interact with this computer remotely")
-arguments:add({ "token" }, { doc = "The token to use when connecting" })
+arguments:add({ "token" }, { required = true, doc = "The token to use when connecting" })
 arguments:add({ "--term", "-t" }, { value = true, doc = "Terminal dimensions or none to hide" })
 arguments:add({ "--dir",  "-d" }, { value = true, doc = "The directory to sync to. Defaults to the current one." })
 arguments:add({ "--http", "-H" }, { value = false, doc = "Use HTTP instead of HTTPs" })
-local args = arguments:parse(...)
+
+local all_arguments = table.pack(...)
+-- Split our argument list on "--".
+local extra_args
+for i = 1, #all_arguments do
+  if all_arguments[i] == "--" then
+    extra_args = i - 1
+    break
+  end
+end
+
+local args = arguments:parse(table.unpack(all_arguments, 1, extra_args))
 
 local token = args.token
 if #token ~= 32 or token:find("[^%a%d]") then
   error("Invalid token (must be 32 alpha-numeric characters)", 0)
+end
+
+if extra_args and extra_args + 2 > #all_arguments then
+  error("Expected program name after --", 0)
 end
 
 -- We keep track of what capabilities are enabled
@@ -203,7 +218,7 @@ end
 local co, buffer
 if parent_term ~= nil then
   buffer = framebuffer.buffer(parent_term)
-  co = coroutine.create(shell.run)
+  co = coroutine.create(shell.execute or shell.run)
   term.redirect(buffer)
 end
 
@@ -224,7 +239,13 @@ local function send_info()
 end
 
 local ok, res = true
-if co then ok, res = coroutine.resume(co, "shell") end
+if co then
+  if extra_args then
+    ok, res = coroutine.resume(co, table.unpack(all_arguments, extra_args + 2))
+  else
+    ok, res = coroutine.resume(co, "shell")
+  end
+end
 local last_change, last_timer = os.clock(), nil
 
 local pending_events, pending_n = {}, 0
@@ -442,4 +463,8 @@ shell.getCompletionInfo()[current_path] = nil
 
 if remote ~= nil then remote.close() end
 
-if not ok then error(res, 0) end
+if not ok then
+  error(res, 0)
+elseif not res then
+  printError("Error executing " .. (extra_args and all_arguments[extra_args + 2] or "shell"))
+end

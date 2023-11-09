@@ -23,7 +23,7 @@ function parser:add(names, arg)
     else self.arguments[#self.arguments + 1] = arg; arg.argument = true end
   end
 
-  table.insert(self.list, #self.list, arg)
+  self.list[#self.list + 1] = arg
 
   -- Default to the setter action
   if arg.action == nil then arg.action = setter end
