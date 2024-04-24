@@ -68,6 +68,12 @@ export const Settings = ({ settings, update }: SettingsProperties): JSX.Element 
           onInput={(e: Event) => updateWith({ terminalBorder: (e.target as HTMLInputElement).checked })} />
         Terminal border
       </label>
+
+      <label>
+        <input type="checkbox" checked={settings.hideToken}
+          onInput={(e: Event) => updateWith({ hideToken: (e.target as HTMLInputElement).checked })} />
+        Hide token
+      </label>
     </div>
   </div >;
 };

@@ -45,6 +45,7 @@ export class Main extends Component<MainProps, MainState> {
 
       darkMode: false,
       terminalBorder: false,
+      hideToken: true,
     };
 
     // Sync settings from local storage
