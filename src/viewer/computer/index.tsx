@@ -125,7 +125,7 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
             <div class={fileInfo}>
               { settings.hideToken 
                 ? <a title="Get a shareable link of this session token"
-                  onClick={this.onClickToken}>Click to get a shared link</a>
+                  onClick={this.onClickToken}>Click to copy a shared link</a>
                 : <a href={target} title="Get a shareable link of this session token"
                   onClick={this.onClickToken}>{token}</a>
               }
