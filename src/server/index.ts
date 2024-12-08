@@ -30,11 +30,13 @@ type Connection = {
   fileClients: Set<SessionWebSocket>,
 };
 
-const sendCallback = (err?: Error) => {
-  if (err) {
+const trySend = (socket: WebSocket, message: Buffer | string): void => {
+  socket.send(message, (err?: Error) => {
+    if (!err) return;
     console.error("Unexpected error when sending", err);
-  }
-};
+    socket.terminate();
+  });
+}
 
 /**
  * Send a connection update packet to all clients
@@ -50,11 +52,11 @@ const connectionUpdate = (connection: Connection) => {
       }
     }
 
-    client.send(encodePacket({
+    trySend(client, encodePacket({
       packet: PacketCode.ConnectionUpdate,
       clients: connection.clients.size,
       capabilities: [...caps],
-    }), sendCallback);
+    }));
   }
 
   if (connection.clients.size == 0) {
@@ -253,11 +255,11 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
 
           case PacketCode.TerminalContents:
           case PacketCode.TerminalInfo:
-            for (const client of connection.terminalViewers) client.send(message, sendCallback);
+            for (const client of connection.terminalViewers) trySend(client, message);
             break;
 
           case PacketCode.TerminalEvents:
-            if (connection.terminalHost !== null) connection.terminalHost.send(message, sendCallback);
+            if (connection.terminalHost !== null) trySend(connection.terminalHost, message);
             break;
 
           case PacketCode.FileListing:
@@ -286,12 +288,12 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
             // only be sent to hosts, etc...
             if (id === 0) {
               for (const client of connection.fileClients) {
-                if (client !== ws) client.send(patched, sendCallback);
+                if (client !== ws) trySend(client, patched);
               }
             } else {
               const client = connection.clients.get(id);
               if (!client || !connection.fileClients.has(client) || client === ws) return;
-              client.send(patched, sendCallback);
+              trySend(client, patched);
             }
 
             break;
@@ -301,6 +303,7 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
 
       ws.on("close", () => {
         // Unregister the various capabilities
+        console.log(`Closing clientId=${ws.clientId}, token=${token}`)
         if (capabilities.has(Capability.TerminalHost)) connection.terminalHost = null;
         connection.terminalViewers.delete(ws);
         connection.fileClients.delete(ws);
@@ -310,7 +313,8 @@ wss.on("connection", (ws: SessionWebSocket, req: http.IncomingMessage) => {
       });
 
       ws.on("error", e => {
-        console.error("Error in websocket client", e);
+        console.error(`Error in websocket client clientId=${ws.clientId}, token=${token}`, e);
+        ws.terminate();
       });
 
       return;
@@ -333,7 +337,7 @@ setInterval(() => {
     }
 
     wsa.isAlive = false;
-    wsa.send(encodePacket({ packet: PacketCode.ConnectionPing }), sendCallback);
+    trySend(wsa, encodePacket({ packet: PacketCode.ConnectionPing }));
   });
 }, 15000);
 
